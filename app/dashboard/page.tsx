@@ -1,12 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
-import { authService } from "../api/auth-service";
-import { Button } from "../components/common/button";
-import { Loader } from "../components/common/loader";
+import { useEffect } from "react";
+import { ChatOverlay } from "../components/chatSystem/ChatOverlay";
 
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null);
+  
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -19,7 +17,7 @@ export default function DashboardPage() {
   return (
     <main>
       <div className="w-full ">
-      Hello World
+     <ChatOverlay/>
       </div>
     </main>
   );

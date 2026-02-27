@@ -10,10 +10,16 @@
   },
   "dependencies": {
     "axios": "^1.13.5",
+    "install": "^0.13.0",
+    "lucide-react": "^0.575.0",
+    "mic-recorder-to-mp3": "^2.2.2",
     "next": "16.1.6",
+    "next-themes": "^0.4.6",
+    "npm": "^11.11.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-toastify": "^11.0.5"
+    "react-toastify": "^11.0.5",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
