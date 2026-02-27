@@ -64,21 +64,35 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
     if (!token) return;
+
+    const MAX_RETRIES = 2;
+    let retryCount = 0;
 
     const socketInstance = ClientIO(
       process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8080",
-      { transports: ["websocket"], auth: { token } },
+      { 
+        transports: ["websocket"], 
+        auth: { token },
+        reconnectionAttempts: MAX_RETRIES 
+      },
     );
 
     socketInstance.on(SOCKET_EVENTS.CONNECT_ERROR, (err) => {
-  
-       notify.error("Something went wrong");
-});
+      retryCount++;
+      if (retryCount <= MAX_RETRIES) {
+        console.log(`Connection failed. Attempt ${retryCount}/${MAX_RETRIES}`)
+        notify.error(`Something Went wrong`);
+      }
+      if (retryCount >= MAX_RETRIES) {
+        socketInstance.disconnect();
+      }
+    });
 
     socketInstance.on(SOCKET_EVENTS.CONNECT, () => {
       setIsConnected(true);
+      retryCount = 0;
       socketInstance.emit(SOCKET_EVENTS.REQUEST_USER_LIST, {
         pageIndex: 0,
         pageSize: 50,
@@ -92,7 +106,6 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     socketInstance.on(SOCKET_EVENTS.RECEIVE_MESSAGE, (msg: ChatMessage) => {
       const senderId =
         typeof msg.sender === "string" ? msg.sender : msg.sender._id;
-      // When receiving, we also want to increment unread count if logic is handled client-side
       updateUserData(senderId, { lastMessage: msg as any }, true);
     });
 
@@ -104,9 +117,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       if (receiverId) updateUserData(receiverId, { lastMessage: msg }, true);
     });
 
-    // --- FIX: LISTEN FOR READ STATUS UPDATES ---
     socketInstance.on(SOCKET_EVENTS.MESSAGE_READ_SUCCESS, (data: any) => {
-      // The backend should return the ID of the user whose messages were read
       const userId = data.senderId || data.userId;
       updateUserData(userId, { unreadCount: 0 }, false);
     });
