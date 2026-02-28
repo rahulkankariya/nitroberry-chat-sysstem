@@ -64,8 +64,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+    const token = localStorage.getItem("socketToken");
+     if(!token){
+       notify.error("Chat connection is off. You cannot chat at this time.");
+       return
+     } 
+   
 
     const MAX_RETRIES = 2;
     let retryCount = 0;

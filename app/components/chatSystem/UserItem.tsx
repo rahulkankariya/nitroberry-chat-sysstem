@@ -45,7 +45,15 @@ export default function UserItem({ user, isActive, onClick }: UserItemProps) {
   };
 
   const displayMsg = getDisplayContent();
-
+const getInitials = (name: string) => {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    // Returns first letter of first word + first letter of last word
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  // Fallback if only one name exists: take first two letters
+  return name.substring(0, 2).toUpperCase();
+};
   const time = lastMessage?.createdAt 
     ? new Date(lastMessage.createdAt).toLocaleTimeString([], { 
         hour: '2-digit', 
@@ -62,16 +70,23 @@ export default function UserItem({ user, isActive, onClick }: UserItemProps) {
       }`}
     >
       {/* Avatar Section */}
-      <div className="relative shrink-0">
-        <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-xs border ${
-          isActive ? "bg-app-accent text-white" : "bg-app-accent/10 text-app-accent"
-        }`}>
-          {user.fullName.substring(0, 2).toUpperCase()}
-        </div>
-        <div className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-app-bg ${
-          user.isOnline ? "bg-emerald-500" : "bg-rose-500"
-        }`} />
-      </div>
+    {/* Avatar Section */}
+<div className="relative shrink-0">
+  <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-xs border transition-all ${
+    isActive 
+      ? "bg-app-accent text-app-accent  border-app-accent shadow-sm" 
+      : "bg-app-accent/15 text-app-accent border-app-accent/20 dark:bg-app-accent/10 dark:border-transparent hover:bg-app-accent/25"
+  }`}>
+    {getInitials(user.fullName)}
+  </div>
+  
+  {/* Online Status Ring */}
+  <div className={`absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full border-2 ${
+    isActive ? "border-app-accent" : "border-white dark:border-[#0c0a09]"
+  } ${
+    user.isOnline ? "bg-emerald-500" : "bg-rose-500"
+  }`} />
+</div>
 
       {/* Content Section */}
       <div className="ml-3 flex-1 overflow-hidden">

@@ -12,18 +12,14 @@ interface ChatHeaderProps {
 }
 
 export default function ChatNavbar({ isConnected }: ChatHeaderProps) {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const { socket } = useSocket();
-  
-  // --- FIX: Hydration Mismatch Logic ---
   const [mounted, setMounted] = useState(false);
 
-  // useEffect only runs on the client, so 'mounted' becomes true only after hydration
+  // Avoid hydration mismatch by waiting for mount
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
   const handleLogout = async () => {
     if (socket) socket.disconnect();
@@ -31,11 +27,13 @@ export default function ChatNavbar({ isConnected }: ChatHeaderProps) {
     window.location.href = "/login";
   };
 
+  // Use resolvedTheme to handle "system" setting correctly
+  const currentTheme = theme === 'system' ? resolvedTheme : theme;
+
   return (
     <div className="h-16 border-b border-app-border flex items-center justify-between px-8 bg-app-text/5 shrink-0">
       <Logo variant="header" />
 
-      {/* RIGHT: SYSTEM CONTROLS */}
       <div className="flex items-center gap-6">
         {/* Connection Status */}
         <div className="hidden xs:flex items-center gap-2 px-3 py-1 rounded-full bg-app-text/5 border border-app-border/50">
@@ -50,14 +48,13 @@ export default function ChatNavbar({ isConnected }: ChatHeaderProps) {
         <div className="flex items-center gap-3">
           {/* Theme Toggle Button */}
           <button 
-            onClick={toggleTheme} 
-            className="text-app-text/60 hover:text-app-accent p-2 min-w-8.5 min-h-8.5 flex items-center justify-center"
+            onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")} 
+            className="text-app-text/60 hover:text-app-accent p-2 transition-transform active:scale-95"
             aria-label="Toggle Theme"
           >
             {!mounted ? (
-              /* Render a placeholder of the same size during SSR to avoid layout shift */
-              <div className="w-4.5 h-4.5" />
-            ) : theme === "dark" ? (
+              <div className="w-4.5 h-4.5" /> // Spacer
+            ) : currentTheme === "dark" ? (
               <Sun size={18} />
             ) : (
               <Moon size={18} />
