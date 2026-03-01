@@ -175,7 +175,7 @@ export default function UserItem({
       {unreadCount > 0 && (
   <div className="ml-2 bg-app-accent px-1.5 py-0.5 rounded-lg shadow-lg shadow-app-accent/20 animate-pulse">
     <span className="text-[10px] font-black italic text-white dark:text-black">
-      {/*unreadCount > 9 ? "9+" : */unreadCount}
+      {unreadCount > 10 ? "10+" : unreadCount}
     </span>
   </div>
 )}

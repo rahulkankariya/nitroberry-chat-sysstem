@@ -16,10 +16,12 @@ type SocketContextType = {
   socket: Socket | null;
   isConnected: boolean;
   users: User[];
+  activeUserId: string | null; // --- ADDED ---
+  setActiveUserId: (id: string | null) => void; // --- ADDED ---
   loadMore: () => void;
   searchUsers: (query: string) => void;
-  fetchRecentChats: () => void; // New
-  fetchAllUsers: () => void; // New
+  fetchRecentChats: () => void;
+  fetchAllUsers: () => void;
   hasMore: boolean;
 };
 
@@ -27,6 +29,8 @@ const SocketContext = createContext<SocketContextType>({
   socket: null,
   isConnected: false,
   users: [],
+  activeUserId: null, // --- ADDED ---
+  setActiveUserId: () => {}, // --- ADDED ---
   loadMore: () => {},
   searchUsers: () => {},
   fetchRecentChats: () => {},
@@ -38,6 +42,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
+  const [activeUserId, setActiveUserId] = useState<string | null>(null); // --- ADDED STATE ---
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [viewMode, setViewMode] = useState<"recent" | "all">("recent");
@@ -101,7 +106,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       socket.emit(SOCKET_EVENTS.REQUEST_USER_LIST, {
         pageIndex: 0,
         pageSize: PAGE_SIZE,
-        fetchAll: true, // Passing flag to backend
+        fetchAll: true,
       });
     }
   }, [socket, isConnected]);
@@ -121,7 +126,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         });
       }
     },
-    [socket, isConnected, viewMode],
+    [socket, isConnected, viewMode]
   );
 
   const loadMore = useCallback(() => {
@@ -194,32 +199,39 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             userMap.set(user._id, { ...userMap.get(user._id), ...user });
           });
 
-          const combined = Array.from(userMap.values());
-          // if (viewMode === "recent") {
-          //   return combined.sort(
-          //     (a, b) =>
-          //       new Date(b.lastMessage?.createdAt || 0).getTime() -
-          //       new Date(a.lastMessage?.createdAt || 0).getTime(),
-          //   );
-          // }
-          return combined;
+          return Array.from(userMap.values());
         });
-        if (res.data.length < PAGE_SIZE) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
+        setHasMore(res.data.length >= PAGE_SIZE);
       }
     });
 
-    socket.on(SOCKET_EVENTS.RECEIVE_MESSAGE, (msg: ChatMessage) => {
-      const senderId =
-        typeof msg.sender === "string" ? msg.sender : msg.sender._id;
-      updateUserData(senderId, { 
-        lastMessage: msg as any,
-        
-       }, true);
-    });
+    // --- UPDATED: RECEIVE_MESSAGE ---
+    const handleReceiveMessage = (msg: ChatMessage) => {
+      const senderId = typeof msg.sender === "string" ? msg.sender : msg.sender._id;
+
+      setUsers((prevUsers) => {
+        // activeUserId is now in scope because it's in the dependency array
+        const isChatOpen = activeUserId === senderId;
+
+        const userIndex = prevUsers.findIndex((u) => u._id === senderId);
+        if (userIndex === -1) return prevUsers;
+
+        const updatedList = [...prevUsers];
+        const currentUser = updatedList[userIndex];
+
+        const updatedUser: User = {
+          ...currentUser,
+          lastMessage: msg as any,
+          // Reset count if open, increment if closed
+          unreadCount: isChatOpen ? 0 : (currentUser.unreadCount || 0) + 1,
+        };
+
+        updatedList.splice(userIndex, 1);
+        return [updatedUser, ...updatedList];
+      });
+    };
+
+    socket.on(SOCKET_EVENTS.RECEIVE_MESSAGE, handleReceiveMessage);
 
     socket.on(SOCKET_EVENTS.MESSAGE_SENT_SUCCESS, (response: any) => {
       const msg = response.message || response;
@@ -235,21 +247,21 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     socket.on(SOCKET_EVENTS.USER_STATUS_CHANGED, (data) => {
       updateUserData(data.userId, { isOnline: data.isOnline }, false);
-      if (data.isOnline) {
-        socket.emit(SOCKET_EVENTS.REQUEST_USER_LIST, {
-          pageIndex: 0,
-          pageSize: 10,
-          search: searchTermRef.current,
-        });
-      }
     });
 
     socket.on(SOCKET_EVENTS.DISCONNECT, () => setIsConnected(false));
 
     return () => {
-      socket.removeAllListeners();
+      socket.off(SOCKET_EVENTS.RECEIVE_MESSAGE, handleReceiveMessage);
+      socket.off(SOCKET_EVENTS.MESSAGE_SENT_SUCCESS);
+      socket.off(SOCKET_EVENTS.MESSAGE_READ_SUCCESS);
+      socket.off(SOCKET_EVENTS.USER_STATUS_CHANGED);
+      socket.off(SOCKET_EVENTS.CONNECT);
+      socket.off(SOCKET_EVENTS.RESPONSE_USER_LIST);
+      socket.off(SOCKET_EVENTS.DISCONNECT);
     };
-  }, [socket, updateUserData, viewMode]);
+    // CRITICAL: activeUserId MUST be in this dependency array!
+  }, [socket, updateUserData, activeUserId]); 
 
   return (
     <SocketContext.Provider
@@ -257,6 +269,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         socket,
         isConnected,
         users,
+        activeUserId,
+        setActiveUserId,
         loadMore,
         hasMore,
         searchUsers,
