@@ -1,6 +1,6 @@
 "use client";
-import { memo } from "react";
-import { Check, FileText, Play, Download } from "lucide-react";
+import { memo, useEffect, useState } from "react";
+import { Check, FileText, CheckCheck } from "lucide-react";
 import { MESSAGE_TYPES } from "../../constants/chat";
 
 interface MessageItemProps {
@@ -10,7 +10,28 @@ interface MessageItemProps {
 }
 
 const MessageItem = memo(({ msg, isOwn, activeUserId }: MessageItemProps) => {
-  // --- Status Logic ---
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // --- Theme Observer: Ensures UI updates when theme toggles ---
+  useEffect(() => {
+    const checkTheme = () => {
+      const isDark = document.documentElement.classList.contains("dark");
+      setIsDarkMode(isDark);
+      console.log(`[Theme Check]: ${isDark ? "🌙 Dark Mode" : "☀️ Light Mode"}`);
+    };
+
+    checkTheme();
+
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // --- Message Status Logic ---
   const recipientStatus = msg.readStatus?.find(
     (status: any) => String(status.user) === String(activeUserId)
   );
@@ -19,20 +40,31 @@ const MessageItem = memo(({ msg, isOwn, activeUserId }: MessageItemProps) => {
 
   const formatTime = (dateString?: string) => {
     if (!dateString) return "--:--";
-    return new Date(dateString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return new Date(dateString).toLocaleTimeString([], { 
+      hour: "2-digit", 
+      minute: "2-digit",
+      hour12: true 
+    });
   };
 
-  // --- Render Helpers ---
- // --- Render Helpers ---
+  // --- Content Renderer with Explicit Color Logic ---
   const renderContent = () => {
+    // Shared text color logic to prevent "White on White" in Light Mode
+    const contentTextColor = isDarkMode 
+      ? "text-white" 
+      : "text-slate-900 dark:text-slate-100";
+
+    const mediaContainerClass = isDarkMode 
+      ? "bg-white/10 border-white/20" 
+      : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10";
+
     switch (msg.messageType) {
       case MESSAGE_TYPES.IMAGE:
         return (
-          /* Small Image Preview: Fixed aspect ratio and constrained width */
           <div className="rounded-lg overflow-hidden mb-1 border border-black/5 shadow-sm">
             <img 
               src={msg.content} 
-              alt="Shared image" 
+              alt="Shared" 
               className="w-48 sm:w-64 h-32 sm:h-40 object-cover hover:opacity-95 transition-opacity cursor-pointer" 
             />
           </div>
@@ -40,36 +72,23 @@ const MessageItem = memo(({ msg, isOwn, activeUserId }: MessageItemProps) => {
 
       case MESSAGE_TYPES.AUDIO:
         return (
-          /* Audio: Standardized width for the player */
-          <div className={`flex items-center gap-3 p-2 rounded-xl min-w-50 max-w-60 ${isOwn ? "bg-white/10" : "bg-app-accent/10"}`}>
-            <audio controls className="h-8 w-full custom-audio-player">
+          <div className={`flex items-center gap-2 p-2 rounded-xl border ${mediaContainerClass}`}>
+            <audio controls className={`h-8 w-48 sm:w-56 custom-audio-player ${isDarkMode ? 'dark-audio' : ''}`}>
               <source src={msg.content} type="audio/mpeg" />
-              Your browser does not support the audio element.
             </audio>
-          </div>
-        );
-
-      case MESSAGE_TYPES.VIDEO:
-        return (
-          /* Small Video Preview: Constrained width to match image preview */
-          <div className="rounded-lg overflow-hidden mb-1 w-48 sm:w-64 bg-black border border-black/5 shadow-sm">
-            <video controls className="w-full aspect-video">
-              <source src={msg.content} />
-            </video>
           </div>
         );
 
       case MESSAGE_TYPES.FILE:
         return (
-          /* Small File Preview: Fixed width to prevent stretching */
-          <div className={`flex items-center gap-3 p-2 rounded-xl border w-48 sm:w-56 ${isOwn ? "border-white/20 bg-white/5" : "border-app-text/10 bg-app-text/5"}`}>
-            <div className="p-2 bg-app-accent rounded-lg text-white shrink-0">
+          <div className={`flex items-center gap-3 p-2.5 rounded-xl border w-48 sm:w-56 ${mediaContainerClass}`}>
+            <div className="p-2 bg-app-accent rounded-lg text-white shrink-0 shadow-sm">
               <FileText size={18} />
             </div>
             <div className="flex flex-col overflow-hidden leading-tight">
-              <span className="text-[11px] font-medium truncate">Document</span>
-              <span className="text-[9px] opacity-60 uppercase truncate">
-                {msg.content.split('.').pop() || 'file'}
+              <span className={`text-[12px] font-semibold truncate ${contentTextColor}`}>Document</span>
+              <span className={`text-[10px] opacity-60 uppercase font-bold tracking-tighter ${contentTextColor}`}>
+                {msg.content.split('.').pop() || 'FILE'}
               </span>
             </div>
           </div>
@@ -78,7 +97,7 @@ const MessageItem = memo(({ msg, isOwn, activeUserId }: MessageItemProps) => {
       case MESSAGE_TYPES.TEXT:
       default:
         return (
-          <p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word">
+          <p className={`whitespace-pre-wrap wrap-break-word text-[14.5px] leading-relaxed font-[450] lg:font-normal ${contentTextColor}`}>
             {msg.content}
           </p>
         );
@@ -86,32 +105,32 @@ const MessageItem = memo(({ msg, isOwn, activeUserId }: MessageItemProps) => {
   };
 
   return (
-    <div className={`flex w-full mb-1 ${isOwn ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-1 duration-300`}>
-      <div className={`relative p-3 rounded-2xl max-w-[80%] lg:max-w-[70%] shadow-sm ${
-          isOwn ? "bg-app-accent text-white rounded-tr-none" : "bg-app-text/10 text-app-text rounded-tl-none"
+    <div className={`flex w-full mb-2 ${isOwn ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-1 duration-300 px-4`}>
+      <div className={`relative p-3 rounded-2xl max-w-[85%] lg:max-w-[70%] shadow-sm transition-all duration-300 ${
+          isOwn 
+            ? "bg-app-accent text-b rounded-tr-none shadow-blue-500/20" 
+            : "bg-white dark:bg-[#1e1e1e] rounded-tl-none border border-slate-200 dark:border-white/5 shadow-sm shadow-slate-200/40"
         }`}
       >
-        {/* Render Dynamic Media Content */}
+        {/* Dynamic Content */}
         {renderContent()}
 
-        {/* Timestamp and Status Icons */}
-        <div className={`flex items-center justify-end gap-1.5 mt-1 select-none ${isOwn ? "text-white/70" : "text-app-text/60"}`}>
-          <span className="text-[9px] font-medium">{formatTime(msg.createdAt)}</span>
+        {/* Footer: Time & Status */}
+        <div className={`flex items-center justify-end gap-1 mt-1.5 select-none 
+          ${isDarkMode ? "text-white/80" : "text-slate-500 dark:text-slate-400"}`}>
+          
+          <span className="text-[9px] font-bold uppercase tracking-tight">
+            {formatTime(msg.createdAt)}
+          </span>
 
           {isOwn && (
-            <div className="flex items-center ml-0.5">
+            <div className="flex items-center ml-1">
               {isRead ? (
-                <div className="flex -space-x-1.5">
-                  <Check size={11} strokeWidth={4} className="text-blue-400" />
-                  <Check size={11} strokeWidth={4} className="text-blue-400" />
-                </div>
+                <CheckCheck size={14} strokeWidth={3} className="text-blue-200" />
               ) : isDelivered ? (
-                <div className="flex -space-x-1.5">
-                  <Check size={11} strokeWidth={3} className="opacity-70" />
-                  <Check size={11} strokeWidth={3} className="opacity-70" />
-                </div>
+                <CheckCheck size={14} strokeWidth={3} className="opacity-70" />
               ) : (
-                <Check size={11} strokeWidth={2} className="opacity-40" />
+                <Check size={14} strokeWidth={3} className="opacity-40" />
               )}
             </div>
           )}

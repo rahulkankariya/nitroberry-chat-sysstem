@@ -12,6 +12,7 @@ export interface User {
   lastSeen: string;
   unreadCount?: number;
   isTyping?: boolean;
+  avatar?:string
 
   // lastMessage can now be the message object or null
   lastMessage: {
