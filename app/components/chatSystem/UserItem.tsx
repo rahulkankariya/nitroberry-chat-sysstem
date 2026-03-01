@@ -19,16 +19,16 @@ export default function UserItem({
   const lastMessage = user.lastMessage;
   const unreadCount = user.unreadCount ?? 0;
 
-  const senderId =
-    typeof lastMessage?.sender === "object"
-      ? lastMessage?.sender?._id
-      : lastMessage?.sender;
+ 
 
-  const isMe = lastMessage && String(senderId) === String(currentUserId);
-  const isSeen =
-    lastMessage?.status === "seen" ||
-    lastMessage?.readStatus?.some((s: any) => s.readAt);
 
+
+  const status = lastMessage?.status;
+
+const isSeen = status === "seen";
+const isDelivered = status === "delivered" || status === "seen";
+
+  console.log("ISeen",lastMessage)
   const getDisplayContent = () => {
     if (!lastMessage) return "No messages yet";
     switch (lastMessage.messageType) {
@@ -69,7 +69,8 @@ export default function UserItem({
           : "hover:bg-app-text/5"
       }`}
     >
-      {/* --- PROFESSIONAL AVATAR SECTION --- */}
+      {/* --- AVATAR SECTION --- */}
+       {/* --- PROFESSIONAL AVATAR SECTION --- */}
       <div className="relative shrink-0 group">
         {/* The Avatar Container (Perfect Circle) */}
         <div
@@ -119,66 +120,61 @@ export default function UserItem({
       </div>
 
       {/* --- CONTENT SECTION --- */}
-      <div className="ml-4 flex-1 min-w-0">
-        <div className="flex justify-between items-baseline mb-0.5">
+      <div className="ml-4 flex-1 min-w-0 flex justify-between items-center">
+        
+        {/* Left Side: Name and Last Message */}
+        <div className="flex-1 min-w-0">
           <h3
             className={`text-[14px] truncate transition-colors ${
-              isActive
-                ? "text-app-text font-bold"
-                : "text-app-text/90 font-semibold"
+              isActive ? "text-app-text font-bold" : "text-app-text/90 font-semibold"
             }`}
           >
             {user.fullName}
           </h3>
+          <p
+            className={`text-[13px] truncate ${
+              unreadCount > 0 && !isActive ? "text-app-text font-medium" : "text-app-text/50"
+            }`}
+          >
+            {getDisplayContent()}
+          </p>
+        </div>
+
+        {/* Right Side: Time and Status Ticks (Stacked) */}
+        <div className="flex flex-col items-end shrink-0 ml-3 gap-1">
           {time && (
             <span
-              className={`text-[10px] font-medium uppercase tracking-tighter ml-2 ${
+              className={`text-[10px] font-medium uppercase tracking-tighter ${
                 unreadCount > 0 ? "text-app-accent" : "opacity-40"
               }`}
             >
               {time}
             </span>
           )}
-        </div>
 
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            {isMe && lastMessage && (
+          <div className="flex items-center gap-1.5 h-5">
+            {/* Unread Counter Badge */}
+            {unreadCount > 0 && (
+              <div className="bg-app-accent px-1.5 py-0.5 rounded-lg shadow-lg shadow-app-accent/20 animate-pulse">
+                <span className="text-[10px] font-black italic text-white dark:text-black">
+                  {unreadCount > 10 ? "10+" : unreadCount}
+                </span>
+              </div>
+            )}
+
+            {/* Checkbox Ticks: Only show if I am the sender */}
+            {lastMessage && (
               <span className="shrink-0">
                 {isSeen ? (
-                  <CheckCheck
-                    size={14}
-                    className="text-blue-500"
-                    strokeWidth={2.5}
-                  />
+                  <CheckCheck size={16} className="text-blue-500" strokeWidth={2.5} />
+                ) : isDelivered ? (
+                  <CheckCheck size={16} className="text-app-text/40" strokeWidth={2} />
                 ) : (
-                  <Check
-                    size={14}
-                    className="text-app-text/30"
-                    strokeWidth={2.5}
-                  />
+                  <Check size={16} className="text-app-text/30" strokeWidth={2} />
                 )}
               </span>
             )}
-
-            <p
-              className={`text-[13px] truncate ${
-                unreadCount > 0 && !isActive
-                  ? "text-app-text font-medium"
-                  : "text-app-text/50"
-              }`}
-            >
-              {getDisplayContent()}
-            </p>
           </div>
-
-      {unreadCount > 0 && (
-  <div className="ml-2 bg-app-accent px-1.5 py-0.5 rounded-lg shadow-lg shadow-app-accent/20 animate-pulse">
-    <span className="text-[10px] font-black italic text-white dark:text-black">
-      {unreadCount > 10 ? "10+" : unreadCount}
-    </span>
-  </div>
-)}
         </div>
       </div>
     </div>
