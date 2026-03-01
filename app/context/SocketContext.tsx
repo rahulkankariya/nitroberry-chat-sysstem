@@ -17,7 +17,9 @@ type SocketContextType = {
   isConnected: boolean;
   users: User[];
   loadMore: () => void;
-  searchUsers: (query: string) => void; // Added search function type
+  searchUsers: (query: string) => void;
+  fetchRecentChats: () => void; // New
+  fetchAllUsers: () => void; // New
   hasMore: boolean;
 };
 
@@ -27,6 +29,8 @@ const SocketContext = createContext<SocketContextType>({
   users: [],
   loadMore: () => {},
   searchUsers: () => {},
+  fetchRecentChats: () => {},
+  fetchAllUsers: () => {},
   hasMore: true,
 });
 
@@ -34,11 +38,10 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
-
-  // Pagination & Search State
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const searchTermRef = useRef(""); // Keeps track of search without breaking current flow
+  const [viewMode, setViewMode] = useState<"recent" | "all">("recent");
+  const searchTermRef = useRef("");
   const PAGE_SIZE = 10;
 
   const updateUserData = useCallback(
@@ -74,20 +77,52 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     [],
   );
 
-  // Added searchUsers function
-  const searchUsers = useCallback((query: string) => {
+  // --- NEW: Fetch Recent Chats ---
+  const fetchRecentChats = useCallback(() => {
     if (socket && isConnected) {
-      searchTermRef.current = query;
+      setViewMode("recent");
       setPage(0);
-      setHasMore(true);
-      setUsers([]); // Clear users for new search
+      setUsers([]);
+      searchTermRef.current = "";
       socket.emit(SOCKET_EVENTS.REQUEST_USER_LIST, {
         pageIndex: 0,
         pageSize: PAGE_SIZE,
-        search: query,
       });
     }
   }, [socket, isConnected]);
+
+  // --- NEW: Fetch All Users (Toggle Flow) ---
+  const fetchAllUsers = useCallback(() => {
+    if (socket && isConnected) {
+      setViewMode("all");
+      setPage(0);
+      setUsers([]);
+      searchTermRef.current = "";
+      socket.emit(SOCKET_EVENTS.REQUEST_USER_LIST, {
+        pageIndex: 0,
+        pageSize: PAGE_SIZE,
+        fetchAll: true, // Passing flag to backend
+      });
+    }
+  }, [socket, isConnected]);
+
+  const searchUsers = useCallback(
+    (query: string) => {
+      if (socket && isConnected) {
+        searchTermRef.current = query;
+        setPage(0);
+        setHasMore(true);
+        setUsers([]);
+        socket.emit(SOCKET_EVENTS.REQUEST_USER_LIST, {
+          pageIndex: 0,
+          pageSize: PAGE_SIZE,
+          search: query,
+          fetchAll: viewMode === "all",
+        });
+      }
+    },
+    [socket, isConnected, viewMode],
+  );
 
   const loadMore = useCallback(() => {
     if (socket && isConnected && hasMore) {
@@ -95,13 +130,13 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       socket.emit(SOCKET_EVENTS.REQUEST_USER_LIST, {
         pageIndex: nextPage,
         pageSize: PAGE_SIZE,
-        search: searchTermRef.current, // Ensure search persists during pagination
+        search: searchTermRef.current,
+        fetchAll: viewMode === "all",
       });
       setPage(nextPage);
     }
-  }, [socket, isConnected, hasMore, page]);
+  }, [socket, isConnected, hasMore, page, viewMode]);
 
-  // EFFECT 1: Initialize Socket Only Once
   useEffect(() => {
     const token = localStorage.getItem("socketToken");
     if (!token) {
@@ -125,7 +160,6 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // EFFECT 2: Listeners (Only re-bind if socket changes, NOT page)
   useEffect(() => {
     if (!socket) return;
 
@@ -155,22 +189,21 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     socket.on(SOCKET_EVENTS.RESPONSE_USER_LIST, (res) => {
       if (res.status === 200) {
         setUsers((prev) => {
-          // Use a Map to ensure we don't have duplicate IDs when merging pages
           const userMap = new Map(prev.map((u) => [u._id, u]));
           res.data.forEach((user: User) => {
             userMap.set(user._id, { ...userMap.get(user._id), ...user });
           });
 
           const combined = Array.from(userMap.values());
-          // Optional: Sort by last message date
-          return combined.sort(
-            (a, b) =>
-              new Date(b.lastMessage?.createdAt || 0).getTime() -
-              new Date(a.lastMessage?.createdAt || 0).getTime(),
-          );
+          // if (viewMode === "recent") {
+          //   return combined.sort(
+          //     (a, b) =>
+          //       new Date(b.lastMessage?.createdAt || 0).getTime() -
+          //       new Date(a.lastMessage?.createdAt || 0).getTime(),
+          //   );
+          // }
+          return combined;
         });
-
-        // If returned data is less than page size, we've reached the end
         if (res.data.length < PAGE_SIZE) {
           setHasMore(false);
         } else {
@@ -182,7 +215,10 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     socket.on(SOCKET_EVENTS.RECEIVE_MESSAGE, (msg: ChatMessage) => {
       const senderId =
         typeof msg.sender === "string" ? msg.sender : msg.sender._id;
-      updateUserData(senderId, { lastMessage: msg as any }, true);
+      updateUserData(senderId, { 
+        lastMessage: msg as any,
+        
+       }, true);
     });
 
     socket.on(SOCKET_EVENTS.MESSAGE_SENT_SUCCESS, (response: any) => {
@@ -194,8 +230,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     socket.on(SOCKET_EVENTS.MESSAGE_READ_SUCCESS, (data: any) => {
-      const userId = data.senderId || data.userId;
-      updateUserData(userId, { unreadCount: 0 }, false);
+      updateUserData(data.senderId || data.userId, { unreadCount: 0 }, false);
     });
 
     socket.on(SOCKET_EVENTS.USER_STATUS_CHANGED, (data) => {
@@ -214,11 +249,20 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       socket.removeAllListeners();
     };
-  }, [socket, updateUserData]); 
+  }, [socket, updateUserData, viewMode]);
 
   return (
     <SocketContext.Provider
-      value={{ socket, isConnected, users, loadMore, hasMore, searchUsers }}
+      value={{
+        socket,
+        isConnected,
+        users,
+        loadMore,
+        hasMore,
+        searchUsers,
+        fetchRecentChats,
+        fetchAllUsers,
+      }}
     >
       {children}
     </SocketContext.Provider>

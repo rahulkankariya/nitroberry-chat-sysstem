@@ -172,13 +172,13 @@ export default function UserItem({
             </p>
           </div>
 
-          {unreadCount > 0 && (
-            <div className="ml-2 bg-app-accent px-1.5 py-0.5 rounded-lg shadow-lg shadow-app-accent/20 animate-pulse">
-              <span className="text-[10px] font-black text-white italic">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            </div>
-          )}
+      {unreadCount > 0 && (
+  <div className="ml-2 bg-app-accent px-1.5 py-0.5 rounded-lg shadow-lg shadow-app-accent/20 animate-pulse">
+    <span className="text-[10px] font-black italic text-white dark:text-black">
+      {/*unreadCount > 9 ? "9+" : */unreadCount}
+    </span>
+  </div>
+)}
         </div>
       </div>
     </div>
