@@ -13,7 +13,9 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) {
-  const { users, loadMore, hasMore } = useSocket();
+  // Destructure searchUsers from context
+  const { users, loadMore, hasMore, searchUsers } = useSocket();
+  console.log("UserList",users)
   const { currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -26,6 +28,21 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
     setIsFetching(false);
   }, [users]);
 
+  // --- BACKEND SEARCH LOGIC (Debounced) ---
+  useEffect(() => {
+    // Only search via backend if the search bar is actually open
+    if (isSearchOpen) {
+      const delayDebounceFn = setTimeout(() => {
+        searchUsers(searchTerm);
+      }, 500); // Wait 500ms after user stops typing
+
+      return () => clearTimeout(delayDebounceFn);
+    } else {
+      // If search is closed, reset to default list
+      searchUsers("");
+    }
+  }, [searchTerm, isSearchOpen, searchUsers]);
+
   const observer = useRef<IntersectionObserver | null>(null);
 
   const lastUserElementRef = useCallback(
@@ -36,7 +53,8 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
 
       observer.current = new IntersectionObserver(
         (entries) => {
-          if (entries[0].isIntersecting && hasMore && searchTerm === "") {
+          // Now allows loading more even if searchTerm exists (server-side pagination for search)
+          if (entries[0].isIntersecting && hasMore) {
             console.log("DEBUG: Sentinel visible. Fetching next page...");
             setIsFetching(true); // Lock the calls
             loadMore();
@@ -47,14 +65,12 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
 
       if (node) observer.current.observe(node);
     },
-    [isFetching, hasMore, searchTerm, loadMore]
+    [isFetching, hasMore, loadMore]
   );
 
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) =>
-      user.fullName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [users, searchTerm]);
+  // We no longer need local filteredUsers because the backend provides the list
+  // But we keep the variable name to avoid changing the JSX below
+  const displayUsers = users;
 
   const toggleSearch = () => {
     setIsSearchOpen((prev) => !prev);
@@ -74,7 +90,7 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
         <input 
           autoFocus={isSearchOpen}
           type="text" 
-          placeholder="Search..." 
+          placeholder="Search users..." 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-app-text/5 border border-app-accent/30 rounded-xl py-2 px-4 text-sm focus:outline-none"
@@ -84,9 +100,9 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
       <hr className="border-app-border/50 mx-4" />
 
       <div className="flex-1 overflow-y-auto custom-scrollbar mt-2 relative">
-        {filteredUsers.length > 0 ? (
+        {displayUsers.length > 0 ? (
           <div className="flex flex-col">
-            {filteredUsers.map((user) => (
+            {displayUsers.map((user) => (
               <UserItem 
                 key={user._id}
                 user={user}
@@ -97,7 +113,7 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
             ))}
             
             {/* The sentinel div */}
-            {hasMore && searchTerm === "" && (
+            {hasMore && (
               <div ref={lastUserElementRef} className="p-6 flex justify-center">
                 <Loader2 className="w-6 h-6 animate-spin text-app-accent opacity-50" />
               </div>
@@ -106,7 +122,7 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
         ) : (
           <div className="flex flex-col items-center justify-center h-full p-8 opacity-40">
              <Search size={32} />
-             <p className="text-xs uppercase mt-2">No Results</p>
+             <p className="text-xs uppercase mt-2">No Results Found</p>
           </div>
         )}
       </div>
