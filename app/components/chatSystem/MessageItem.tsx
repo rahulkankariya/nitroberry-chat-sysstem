@@ -107,7 +107,7 @@ const MessageItem = memo(({ msg, isOwn, activeUserId }: MessageItemProps) => {
   return (
     <div className={`flex w-full mb-2 ${isOwn ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-1 duration-300 px-4`}>
       <div className={`relative p-3 rounded-2xl max-w-[85%] lg:max-w-[70%] shadow-sm transition-all duration-300 ${
-          isOwn 
+          isDarkMode 
             ? "bg-app-accent text-b rounded-tr-none shadow-blue-500/20" 
             : "bg-white dark:bg-[#1e1e1e] rounded-tl-none border border-slate-200 dark:border-white/5 shadow-sm shadow-slate-200/40"
         }`}
@@ -126,7 +126,7 @@ const MessageItem = memo(({ msg, isOwn, activeUserId }: MessageItemProps) => {
           {isOwn && (
             <div className="flex items-center ml-1">
               {isRead ? (
-                <CheckCheck size={14} strokeWidth={3} className="text-blue-200" />
+                <CheckCheck size={14} strokeWidth={3} className="text-blue-500" />
               ) : isDelivered ? (
                 <CheckCheck size={14} strokeWidth={3} className="opacity-70" />
               ) : (

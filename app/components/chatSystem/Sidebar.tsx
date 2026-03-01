@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { MessageSquare, Users, Loader2, Search } from "lucide-react"; // Changed icons
+import { MessageSquare, Users, Loader2, Search, X } from "lucide-react";
 import UserItem from "./UserItem";
 import { User } from "../../types/chat";
 import { useSocket } from "../../context/SocketContext";
@@ -12,29 +12,50 @@ interface SidebarProps {
   onSelectUser: (user: User) => void;
 }
 
-// Define the two possible views
 type ViewMode = "recent" | "all";
 
 export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) {
-  // Assuming your context provides a way to fetch all users vs recent chats
-  const { users, loadMore, hasMore, fetchAllUsers, fetchRecentChats } = useSocket();
+  // Use searchUsers from your context
+  const { 
+    users, 
+    loadMore, 
+    hasMore, 
+    fetchAllUsers, 
+    fetchRecentChats, 
+    searchUsers 
+  } = useSocket();
+  
   const { currentUser } = useAuth();
   
   const [view, setView] = useState<ViewMode>("recent");
   const [isFetching, setIsFetching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const observer = useRef<IntersectionObserver | null>(null);
 
-  // --- VIEW TOGGLE LOGIC ---
+  // --- SEARCH & VIEW LOGIC ---
+  useEffect(() => {
+    // If there is no search query, just fetch the default list for the current view
+    if (searchQuery.trim() === "") {
+      if (view === "all") {
+        fetchAllUsers();
+      } else {
+        fetchRecentChats();
+      }
+      return;
+    }
+
+    // If there IS a search query, use your dedicated searchUsers function
+    const delayDebounceFn = setTimeout(() => {
+      searchUsers(searchQuery);
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, view, fetchAllUsers, fetchRecentChats, searchUsers]);
+
   const handleToggleView = () => {
     const nextView = view === "recent" ? "all" : "recent";
     setView(nextView);
-    
-    // Call specific socket events based on the view
-    if (nextView === "all") {
-      fetchAllUsers(); // Your new socket event for all system users
-    } else {
-      fetchRecentChats(); // Return to the list of active conversations
-    }
+    setSearchQuery(""); // Clear search when switching modes
   };
 
   useEffect(() => {
@@ -51,7 +72,7 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
         (entries) => {
           if (entries[0].isIntersecting && hasMore) {
             setIsFetching(true);
-            loadMore(); // This should be pagination-aware based on the current view in the backend
+            loadMore(); 
           }
         },
         { threshold: 0.1 }
@@ -65,19 +86,42 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
   return (
     <aside className="w-80 h-full border-r border-app-border bg-app-bg flex flex-col overflow-hidden">
       {/* HEADER SECTION */}
-      <div className="p-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tight text-app-text">
-          {view === "recent" ? "Messages" : "All Users"}
-        </h1>
-        
-        {/* ACTION BUTTON: Toggle between Recent Chats and All Users */}
-        <button 
-          onClick={handleToggleView} 
-          className="p-2 rounded-full bg-app-accent/10 text-app-accent hover:bg-app-accent/20 transition-colors"
-          title={view === "recent" ? "Show All Users" : "Back to Messages"}
-        >
-          {view === "recent" ? <Users size={20} /> : <MessageSquare size={20} />}
-        </button>
+      <div className="p-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold tracking-tight text-app-text">
+            {view === "recent" ? "Messages" : "All Users"}
+          </h1>
+          
+          <button 
+            onClick={handleToggleView} 
+            className="p-2 rounded-full bg-app-accent/10 text-app-accent hover:bg-app-accent/20 transition-colors"
+          >
+            {view === "recent" ? <Users size={20} /> : <MessageSquare size={20} />}
+          </button>
+        </div>
+
+        {/* SEARCH INPUT */}
+        <div className="relative group">
+          <Search 
+            size={16} 
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-app-text/40 group-focus-within:text-app-accent" 
+          />
+          <input
+            type="text"
+            placeholder="Search users..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-app-border/20 border border-transparent focus:border-app-accent/30 py-2 pl-10 pr-10 rounded-lg text-sm outline-none transition-all"
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-app-text/40 hover:text-app-text"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       <hr className="border-app-border/50 mx-4" />
@@ -91,26 +135,22 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
                 key={user._id}
                 user={user}
                 isActive={selectedUserId === user._id}
-                onClick={() => {
-                   onSelectUser(user);
-                   // Optional: Switch back to recent view when a user is selected
-                   // setView("recent"); 
-                }}
+                onClick={() => onSelectUser(user)}
                 currentUserId={currentUser?._id || ""} 
               />
             ))}
             
             {hasMore && (
-              <div ref={lastUserElementRef} className="p-6 flex justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-app-accent opacity-50" />
+              <div ref={lastUserElementRef} className="p-4 flex justify-center">
+                <Loader2 className="w-5 h-5 animate-spin text-app-accent opacity-50" />
               </div>
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full p-8 opacity-40">
+          <div className="flex flex-col items-center justify-center h-full p-8 opacity-40 text-center">
              <Search size={32} />
              <p className="text-xs uppercase mt-2">
-                {view === "recent" ? "No conversations yet" : "No users found"}
+                {searchQuery ? `No results for "${searchQuery}"` : "No users found"}
              </p>
           </div>
         )}

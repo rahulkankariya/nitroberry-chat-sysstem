@@ -180,7 +180,7 @@ export default function MessageInput({ onSend, onSendVoice, onSendFile, placehol
         className={`p-3 rounded-full transition-all active:scale-90 shadow-sm ${
           isRecording 
             ? "bg-rose-500 text-white animate-pulse" 
-            : "bg-app-accent text-white"
+            : "bg-app-accent text-black"
         }`}
       >
         {input.trim() ? <Send size={20} /> : isRecording ? <Square size={20} fill="currentColor" /> : <Mic size={20} />}
