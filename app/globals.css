@@ -24,11 +24,3 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Custom Scrollbar for a SaaS look */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(var(--app-text), 0.1);
-  border-radius: 10px;
-}
