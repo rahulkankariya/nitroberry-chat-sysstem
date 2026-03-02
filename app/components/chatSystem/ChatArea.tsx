@@ -23,9 +23,12 @@ export default function ChatArea({ activeUser }: { activeUser: User | null }) {
     try {
       const fileName = `voice-${Date.now()}.mp3`;
       const result = await uploadMedia({ files: blob, fileName });
-      if (result.success) {
+      if (result && result.data && result.data.length > 0) {
+           notify.success(result.message);
         const savedAudioUrl = result.data[0].fullOSPath;
         sendMessage(savedAudioUrl, MESSAGE_TYPES.AUDIO);
+      }else{
+        notify.error(result.message);
       }
     } catch (error) {
       console.error("Voice Upload Error:", error);
@@ -33,21 +36,32 @@ export default function ChatArea({ activeUser }: { activeUser: User | null }) {
     }
   };
 
-  const handleSendFile = async (file: File, type: "image" | "video" | "file") => {
+  const handleSendFile = async (
+    file: File,
+    type: "image" | "video" | "file",
+  ) => {
     try {
-      const extension = file.name.split('.').pop();
+      const extension = file.name.split(".").pop();
       const fileName = `${type}-${Date.now()}.${extension}`;
       const result = await uploadMedia({ files: file, fileName });
-
-      if (result.success) {
+      console.log("Result", result);
+      if (result && result.data && result.data.length > 0) {
+        notify.success(result.message);
         const finalUrl = result.data[0].fullOSPath;
         let messageType;
         switch (type) {
-          case "image": messageType = MESSAGE_TYPES.IMAGE; break;
-          case "video": messageType = MESSAGE_TYPES.VIDEO; break;
-          default: messageType = MESSAGE_TYPES.FILE;
+          case "image":
+            messageType = MESSAGE_TYPES.IMAGE;
+            break;
+          case "video":
+            messageType = MESSAGE_TYPES.VIDEO;
+            break;
+          default:
+            messageType = MESSAGE_TYPES.FILE;
         }
         sendMessage(finalUrl, messageType);
+      } else {
+        notify.error(result.message);
       }
     } catch (error) {
       notify.error(`Failed to upload ${type}`);
@@ -58,7 +72,6 @@ export default function ChatArea({ activeUser }: { activeUser: User | null }) {
 
   return (
     <div className="flex-1 flex flex-col h-full max-h-full overflow-hidden relative bg-[rgb(var(--app-bg))] transition-colors duration-200">
-      
       {/* REDUCED GLOW: Lowered opacity and blurred it more 
           so it doesn't "break" the dark mode background feel.
       */}
@@ -70,7 +83,7 @@ export default function ChatArea({ activeUser }: { activeUser: User | null }) {
       <div className="border-b border-[rgb(var(--app-border))] z-10">
         <ChatHeader user={activeUser} />
       </div>
-      
+
       {/* Message List Container */}
       <main className="flex-1 overflow-hidden flex flex-col relative z-10">
         <MessageList

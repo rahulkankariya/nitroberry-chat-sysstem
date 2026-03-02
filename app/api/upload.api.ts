@@ -15,8 +15,12 @@ export const uploadMedia = async (params: UploadParams)=> {
     }
   });
 
-  // 'api' is your axios instance
-  const { data } = await api.post("/common/upload/bulk", formData, {});
+
+  const { data } = await api.post("/common/upload/bulk", formData, {
+    headers:{
+      "Content-Type":"multipart/form-data",
+    }
+  });
 
   return data;
 };
