@@ -57,15 +57,7 @@ export default function ChatNavbar({ isConnected, view, onViewChange }: ChatHead
 
       {/* 2. BOTTOM SECTION */}
       <div className="flex flex-col items-center gap-6 w-full px-3">
-        <div className="relative group">
-          <div
-            className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${
-              isConnected 
-                ? "bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.4)] animate-pulse" 
-                : "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.4)]"
-            }`}
-          />
-        </div>
+        
 
         <div className="flex flex-col items-center gap-2 w-full">
           <button
@@ -113,7 +105,8 @@ function NavIcon({
       relative group w-12 h-12 flex items-center justify-center rounded-2xl transition-all duration-300
       ${active
           ? "bg-[rgb(var(--app-accent))] text-white shadow-xl shadow-indigo-500/20 scale-105"
-          : "hover:bg-[rgba(var(--app-accent),0.1)] text-app-text/50"
+          /* 1. Added explicit text-slate-500 for light mode and kept your variable for dark */
+          : "hover:bg-[rgba(var(--app-accent),0.1)] text-slate-500 dark:text-app-text/50"
       }
     `}
     >

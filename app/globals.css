@@ -2,35 +2,90 @@
 
 @layer base {
   :root {
-    --app-bg: 248, 250, 252;
-    --app-text: 15, 23, 42;
-    --app-accent: 99, 102, 241;
-    --app-border: 226, 232, 240;
-    --bubble-secondary: 255, 255, 255;
-    /* This ensures the navbar is light in light mode */
-    --nav-bg: 255, 255, 255, 0.8; 
+    /* --- Light Mode (Modern Apple/Dribbble Clean) --- */
+    --app-bg: 248, 250, 252;          /* Slate-50 */
+    --app-text: 15, 23, 42;           /* Slate-900 */
+    --app-accent: 99, 102, 241;       /* Indigo-500 */
+    --app-border: 226, 232, 240;      /* Slate-200 */
+    --bubble-secondary: 255, 255, 255; /* Pure White */
+    --nav-bg: 255, 255, 255, 0.7;     /* Translucent white */
+    --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    
+    /* NEW: Secondary Accent for gradients (Indigo-600 equivalent) */
+    --app-accent-dark: 79, 70, 229;   
   }
 
   .dark {
-    --app-bg: 3, 7, 18;
-    --app-text: 241, 245, 249;
-    --app-accent: 129, 140, 248;
-    --app-border: 30, 41, 59;
-    --bubble-secondary: 15, 23, 42;
-    /* This ensures the navbar is dark in dark mode */
-    --nav-bg: 3, 7, 18, 0.8;
+    /* --- Dark Mode (Deep Space / Glassmorphic) --- */
+    --app-bg: 3, 7, 18;               /* Rich Midnight Black */
+    --app-text: 241, 245, 249;        /* Slate-100 */
+    --app-accent: 129, 140, 248;      /* Soft Indigo-400 */
+    --app-border: 30, 41, 59;         /* Slate-800 */
+    --bubble-secondary: 15, 23, 42;   /* Slate-900 */
+    --nav-bg: 3, 7, 18, 0.6;          /* Deep translucent */
+    --card-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+    
+    /* NEW: Secondary Accent for gradients (Indigo-500 equivalent) */
+    --app-accent-dark: 99, 102, 241;
   }
 }
 
 @layer base {
+  * {
+    @apply border-[rgb(var(--app-border))];
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease;
+  }
+
   body {
     background-color: rgb(var(--app-bg));
     color: rgb(var(--app-text));
-    /* Soft light source effect */
     background-image: radial-gradient(
       circle at top right, 
-      rgba(var(--app-accent), 0.08), 
-      transparent 45%
+      rgba(var(--app-accent), 0.05), 
+      transparent 40%
     );
+    min-height: 100vh;
+    overflow: hidden;
   }
+}
+
+/* --- Premium UI Utility Classes --- */
+@layer components {
+  .glass-card {
+    background: rgba(var(--bubble-secondary), 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--card-shadow);
+  }
+
+  .chat-bubble-sent {
+    /* Replaced Hex with RGB Variable Gradient */
+    background: linear-gradient(
+      135deg, 
+      rgb(var(--app-accent)), 
+      rgb(var(--app-accent-dark))
+    );
+    color: white;
+    box-shadow: 0 4px 12px rgba(var(--app-accent), 0.25);
+  }
+
+  /* Custom Scrollbar for Chat */
+  ::-webkit-scrollbar {
+    width: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    /* Using variables for scrollbar color to match theme */
+    background: rgba(var(--app-text), 0.1);
+    border-radius: 10px;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(var(--app-text), 0.2);
+  }
+}
+
+[data-nextjs-dev-tools-button] {
+  display: none !important;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { MessageSquare, Users, Loader2, Search, X } from "lucide-react";
+import { Loader2, Search, X } from "lucide-react";
 import UserItem from "./UserItem";
 import { User } from "../../types/chat";
 import { useSocket } from "../../context/SocketContext";
@@ -12,7 +12,7 @@ type ViewMode = "recent" | "all";
 interface SidebarProps {
   selectedUserId?: string;
   onSelectUser: (user: User) => void;
-  view: ViewMode; // Received from parent
+  view: ViewMode;
 }
 
 export default function Sidebar({ selectedUserId, onSelectUser, view }: SidebarProps) {
@@ -30,7 +30,6 @@ export default function Sidebar({ selectedUserId, onSelectUser, view }: SidebarP
   const [searchQuery, setSearchQuery] = useState("");
   const observer = useRef<IntersectionObserver | null>(null);
 
-  // Clear search when the view mode changes via Navbar
   useEffect(() => {
     setSearchQuery("");
   }, [view]);
@@ -79,28 +78,32 @@ export default function Sidebar({ selectedUserId, onSelectUser, view }: SidebarP
   );
 
   return (
-    <aside className="w-80 h-full  border-app-border bg-app-bg flex flex-col overflow-hidden">
+    /* Uses your CSS variable --app-bg and --app-border */
+    <aside className="w-80 h-full border-r border-[rgb(var(--app-border))] bg-[rgb(var(--app-bg))] flex flex-col overflow-hidden transition-colors duration-200">
       <div className="p-4 flex flex-col gap-3">
-        <h1 className="text-xl font-bold tracking-tight text-app-text">
+        {/* Uses your CSS variable --app-text */}
+        <h1 className="text-xl font-bold tracking-tight text-[rgb(var(--app-text))]">
           {view === "recent" ? "Messages" : "All Users"}
         </h1>
 
         <div className="relative group">
           <Search 
             size={16} 
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-app-text/40 group-focus-within:text-app-accent" 
+            /* Uses accent color for icon when focused, otherwise muted text */
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--app-text))]/40 group-focus-within:text-[rgb(var(--app-accent))]" 
           />
           <input
             type="text"
             placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-app-border/20 border border-transparent focus:border-app-accent/30 py-2 pl-10 pr-10 rounded-lg text-sm outline-none transition-all"
+            /* Background uses a slight opacity of the text color to look correct in both modes */
+            className="w-full bg-[rgb(var(--app-text))]/5 border border-transparent focus:border-[rgb(var(--app-accent))]/30 py-2 pl-10 pr-10 rounded-lg text-sm outline-none transition-all text-[rgb(var(--app-text))] placeholder:text-[rgb(var(--app-text))]/30"
           />
           {searchQuery && (
             <button 
               onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-app-text/40 hover:text-app-text"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgb(var(--app-text))]/40 hover:text-[rgb(var(--app-text))]"
             >
               <X size={14} />
             </button>
@@ -108,7 +111,7 @@ export default function Sidebar({ selectedUserId, onSelectUser, view }: SidebarP
         </div>
       </div>
 
-      <hr className="border-app-border/50 mx-4" />
+      <hr className="border-[rgb(var(--app-border))] mx-4 opacity-50" />
 
       <div className="flex-1 overflow-y-auto custom-scrollbar mt-2 relative">
         {users.length > 0 ? (
@@ -125,12 +128,12 @@ export default function Sidebar({ selectedUserId, onSelectUser, view }: SidebarP
             
             {hasMore && (
               <div ref={lastUserElementRef} className="p-4 flex justify-center">
-                <Loader2 className="w-5 h-5 animate-spin text-app-accent opacity-50" />
+                <Loader2 className="w-5 h-5 animate-spin text-[rgb(var(--app-accent))] opacity-50" />
               </div>
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full p-8 opacity-40 text-center">
+          <div className="flex flex-col items-center justify-center h-full p-8 opacity-40 text-center text-[rgb(var(--app-text))]">
              <Search size={32} />
              <p className="text-xs uppercase mt-2">
                 {searchQuery ? `No results for "${searchQuery}"` : "No users found"}
