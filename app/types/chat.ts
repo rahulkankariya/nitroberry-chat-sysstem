@@ -13,6 +13,7 @@ export interface User {
   unreadCount?: number;
   isTyping?: boolean;
   avatar?:string
+  
 
   // lastMessage can now be the message object or null
   lastMessage: {
@@ -24,6 +25,7 @@ export interface User {
     status: string;
     readStatus: MessageReadStatus[];
   } | null;
+ 
 }
 export interface ChatMessage {
   _id: string;

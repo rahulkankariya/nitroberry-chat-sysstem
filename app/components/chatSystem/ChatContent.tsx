@@ -45,7 +45,6 @@ export function ChatContent() {
 
       {/* 3. MAIN CONTENT CONTAINER */}
       <div className="flex-1 flex p-3 md:p-5 gap-4 overflow-hidden">
-        
         {/* SIDEBAR (The Contacts List) */}
         <aside className="hidden lg:flex w-80 flex-col bg-[rgb(var(--app-surface))] rounded-4xl border border-[rgb(var(--app-border))] shadow-sm overflow-hidden">
           <Sidebar
