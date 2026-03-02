@@ -95,7 +95,7 @@ export default function MessageInput({ onSend, onSendVoice, onSendFile, placehol
           </button>
 
           {showAttachMenu && (
-            <div className="absolute bottom-14 left-0 bg-[rgb(var(--app-surface))] border border-[rgb(var(--app-border))] rounded-2xl shadow-xl p-2 flex flex-col gap-1 min-w-[160px] animate-in slide-in-from-bottom-2 z-50">
+            <div className="absolute bottom-14 left-0 bg-[rgb(var(--app-surface))] border border-[rgb(var(--app-border))] rounded-2xl shadow-xl p-2 flex flex-col gap-1 min-w-40 animate-in slide-in-from-bottom-2 z-50">
               <AttachOption icon={<Image size={18} className="text-blue-500" />} label="Images" onClick={() => triggerPicker("image")} />
               <AttachOption icon={<Film size={18} className="text-purple-500" />} label="Video" onClick={() => triggerPicker("video")} />
               <AttachOption icon={<FileText size={18} className="text-orange-500" />} label="Documents" onClick={() => triggerPicker("doc")} />

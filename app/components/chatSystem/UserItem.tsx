@@ -109,7 +109,7 @@ export default function UserItem({
 
           <div className="flex items-center justify-end h-5 min-w-5">
             {unreadCount > 0 && !isActive ? (
-              <div className="flex items-center justify-center bg-green-500 min-w-[18px] h-[18px] rounded-full shadow-lg shadow-green-500/20">
+              <div className="flex items-center justify-center bg-green-500 min-w-4.5 h-4.5 rounded-full shadow-lg shadow-green-500/20">
                 <span className="text-[9px] font-black text-white leading-none px-1">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
