@@ -7,13 +7,14 @@ import { Input } from "../../common/Input";
 import { authService } from "@/app/api/auth-service";
 import { notify } from "@/app/utils/toast";
 import { LoginSchema } from "@/app/types/auth";
+import { useAuth } from "@/app/context/AuthContext";
 
 
 export const LoginForm = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const router = useRouter();
-
+const { setCurrentUser } = useAuth();
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrors({});
@@ -39,6 +40,7 @@ export const LoginForm = () => {
      let res =  await authService.login(result.data);
 
       notify.success(res.message?? "Login Sucess");
+        setCurrentUser(res?.data?.socketUser);
       router.push("/dashboard");
     } catch (err: any) {
       const msg = err.response?.data?.message || "Somtething went wrong";

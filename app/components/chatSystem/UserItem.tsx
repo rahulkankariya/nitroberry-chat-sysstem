@@ -17,6 +17,7 @@ export default function UserItem({
   onClick,
   currentUserId,
 }: UserItemProps) {
+
   const lastMessage = user.lastMessage;
   const unreadCount = user.unreadCount ?? 0;
 

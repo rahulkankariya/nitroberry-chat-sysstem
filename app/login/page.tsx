@@ -1,8 +1,10 @@
 import { LoginForm } from "../components/features/auth/login-form";
+import { AuthProvider } from "../context/AuthContext";
 
 
 export default function LoginPage() {
   return (
+    <AuthProvider>
     <main className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#020202]">
       {/* Dynamic Background Glows */}
       <div className="absolute inset-0 pointer-events-none">
@@ -18,5 +20,6 @@ export default function LoginPage() {
         <LoginForm />
       </section>
     </main>
+    </AuthProvider>
   );
 }
