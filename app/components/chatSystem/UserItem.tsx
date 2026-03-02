@@ -1,7 +1,8 @@
 "use client";
+
 import { User } from "../../types/chat";
 import { MESSAGE_TYPES } from "../../constants/chat";
-import { CheckCheck, Check } from "lucide-react";
+import { CheckCheck } from "lucide-react";
 
 interface UserItemProps {
   user: User;
@@ -19,7 +20,6 @@ export default function UserItem({
   const lastMessage = user.lastMessage;
   const unreadCount = user.unreadCount ?? 0;
 
-  // Logic: Only show ticks if the last message was sent by the current user
   const isSentByMe = lastMessage?.sender === currentUserId;
   const isSeen = lastMessage?.status === "seen";
 
@@ -51,60 +51,72 @@ export default function UserItem({
   return (
     <div
       onClick={onClick}
-      className={`group flex items-center p-3.5 mx-2 my-1 rounded-xl cursor-pointer transition-all duration-200 
-    ${isActive ? "bg-slate-100 dark:bg-white/5" : "hover:bg-slate-100 dark:hover:bg-white/5"}`}
+      className={`group flex items-center p-3.5 mx-2 my-1 rounded-2xl cursor-pointer transition-all duration-200 
+      ${isActive 
+        ? "bg-[rgb(var(--app-accent))]/10 shadow-sm" 
+        : "hover:bg-[rgb(var(--app-text))]/5"
+      }`}
     >
       {/* --- AVATAR SECTION --- */}
       <div className="relative shrink-0">
-        <div className={`h-12 w-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm overflow-hidden border-2 relative 
-            ${isActive ? "border-app-accent scale-105" : "bg-slate-100 dark:bg-zinc-900 border-slate-200 dark:border-white/10 group-hover:border-app-accent/40"}`}>
+        <div className={`h-12 w-12 rounded-full flex items-center justify-center transition-all duration-300 overflow-hidden border-2 relative 
+            ${isActive 
+                ? "border-[rgb(var(--app-accent))] scale-105 shadow-lg shadow-[rgb(var(--app-accent))]/20" 
+                : "bg-[rgb(var(--app-text))]/5 border-transparent group-hover:border-[rgb(var(--app-accent))]/30"
+            }`}>
           {user.avatar ? (
-            <img src={user.avatar} alt={user.fullName} className="h-full w-full object-cover" />
+            <img src={user.avatar} alt="" className="h-full w-full object-cover" />
           ) : (
-            <span className={`text-sm font-bold ${isActive ? "text-app-accent" : "text-slate-500 dark:text-zinc-400"}`}>
+            <span className={`text-xs font-black ${isActive ? "text-[rgb(var(--app-accent))]" : "text-[rgb(var(--app-text))]/40"}`}>
               {getInitials(user.fullName)}
             </span>
           )}
         </div>
+        
+        {/* Online Status Dot */}
         <div className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 transition-all duration-300 
-          ${isActive ? "border-slate-100 dark:border-zinc-800" : "border-white dark:border-zinc-950"} 
-          ${user.isOnline ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-400 dark:bg-zinc-600"}`} 
+          ${isActive ? "border-[rgb(var(--app-surface))]" : "border-[rgb(var(--app-bg))]"} 
+          ${user.isOnline ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" : "bg-gray-400"}`} 
         />
       </div>
 
       {/* --- CONTENT SECTION --- */}
       <div className="ml-4 flex-1 min-w-0 flex justify-between items-center">
         <div className="flex-1 min-w-0">
-          <h3 className={`text-sm truncate ${isActive ? "text-slate-900 dark:text-slate-100 font-semibold" : "text-slate-700 dark:text-zinc-300"}`}>
+          <h3 className={`text-sm truncate transition-colors ${
+            isActive ? "text-[rgb(var(--app-text))] font-bold" : "text-[rgb(var(--app-text))] font-semibold"
+          }`}>
             {user.fullName}
           </h3>
-          <p className={`text-xs truncate mt-0.5 ${unreadCount > 0 && !isActive ? "text-slate-900 dark:text-slate-200 font-bold" : "text-slate-500 dark:text-zinc-500"}`}>
+          <p className={`text-xs truncate mt-0.5 transition-colors ${
+            unreadCount > 0 && !isActive 
+              ? "text-[rgb(var(--app-text))] font-bold" 
+              : "text-[rgb(var(--app-text))]/50"
+          }`}>
             {getDisplayContent()}
           </p>
         </div>
 
+        {/* --- META SECTION (Time & Badges) --- */}
         <div className="flex flex-col items-end shrink-0 ml-3 gap-1.5">
           {time && (
-            <span className={`text-[10px] font-medium transition-colors ${unreadCount > 0 && !isActive ? "text-emerald-500 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500"}`}>
+            <span className={`text-[10px] font-bold tracking-tighter transition-colors ${
+              unreadCount > 0 && !isActive ? "text-green-500" : "text-[rgb(var(--app-text))]/30"
+            }`}>
               {time}
             </span>
           )}
 
           <div className="flex items-center justify-end h-5 min-w-5">
-            {/* Show Unread Count if exists, OTHERWISE show status ticks if I sent the message */}
             {unreadCount > 0 && !isActive ? (
-              <div className="flex items-center justify-center bg-emerald-500 min-w-4.5 h-4.5 rounded-full shadow-sm">
-                <span className="text-[10px] font-bold text-white leading-none px-1">
+              <div className="flex items-center justify-center bg-green-500 min-w-[18px] h-[18px] rounded-full shadow-lg shadow-green-500/20">
+                <span className="text-[9px] font-black text-white leading-none px-1">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               </div>
             ) : isSentByMe ? (
               <span className="shrink-0">
-                {isSeen ? (
-                  <CheckCheck size={16} className="text-sky-500" />
-                ) : (
-                  <CheckCheck size={16} className="text-slate-400 dark:text-zinc-500" />
-                )}
+                <CheckCheck size={16} className={isSeen ? "text-blue-500" : "text-[rgb(var(--app-text))]/20"} />
               </span>
             ) : null}
           </div>
