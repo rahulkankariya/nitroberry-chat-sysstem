@@ -1,25 +1,25 @@
 "use client";
 
-export const Logo = ({ variant = "header" }: { variant?: "login" | "header" }) => {
+export const Logo = ({ variant = "header", className = "" }: { variant?: "login" | "header", className?: string }) => {
   const isHeader = variant === "header";
 
   return (
     <div 
-      className={`flex items-center justify-center transition-all duration-300 
-      ${isHeader ? "flex-row gap-2" : "flex-col gap-4 w-full text-center"}`}
+      className={`flex items-center justify-center transition-all duration-300 ${className}
+      ${isHeader ? "flex-col gap-0" : "flex-col gap-4 w-full text-center"}`}
     >
       
-      {/* Icon Box: Using your DART PRO brand purple */}
+      {/* Icon Box: Using your Brand Purple */}
       <div className={`
         bg-[#7f56d9] flex items-center justify-center 
-        transition-transform duration-500 hover:scale-110
+        transition-all duration-500 hover:rotate-12 hover:scale-110
         ${isHeader 
-          ? "w-8 h-8 rounded-lg shadow-[0_2px_8px_rgba(127,86,217,0.3)]" 
-          : "w-16 h-16 rounded-2xl shadow-[0_0_25px_rgba(127,86,217,0.4)]"
+          ? "w-10 h-10 rounded-xl shadow-[0_4px_12px_rgba(127,86,217,0.3)]" 
+          : "w-20 h-20 rounded-4xl shadow-[0_0_40px_rgba(127,86,217,0.4)]"
         }
       `}>
         <svg 
-          className={`${isHeader ? "w-5 h-5" : "w-10 h-10"} text-white`} 
+          className={`${isHeader ? "w-6 h-6" : "w-10 h-10"} text-white`} 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -33,22 +33,22 @@ export const Logo = ({ variant = "header" }: { variant?: "login" | "header" }) =
         </svg>
       </div>
 
-      {/* Text: Managed by next-theme variables */}
-      <div className="flex flex-col items-start">
-        <h1 className={`
-          font-black tracking-tighter uppercase leading-none transition-colors duration-300
-          text-app-text  /* This uses your theme-aware variable */
-          ${isHeader ? "text-lg" : "text-3xl"}
-        `}>
-          Nitroberry
-        </h1>
-        
-        {!isHeader && (
-          <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-app-accent mt-1">
+      {/* Text: Hidden in Header for the Vertical Nav look, Shown in Login */}
+      {!isHeader ? (
+        <div className="flex flex-col items-center mt-4">
+          <h1 className="font-black tracking-tighter uppercase leading-none text-3xl text-[rgb(var(--app-text))]">
+            Nitroberry
+          </h1>
+          <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-[rgb(var(--app-accent))] mt-2">
             System Interface
           </span>
-        )}
-      </div>
+        </div>
+      ) : (
+        /* Optional: Tiny indicator or label for Sidebar */
+        <span className="text-[8px] font-black uppercase tracking-tighter opacity-20 mt-2 lg:hidden">
+          NB
+        </span>
+      )}
     </div>
   );
 };

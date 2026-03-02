@@ -1,25 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sun, Moon, LogOut } from "lucide-react";
+import { Sun, Moon, LogOut, MessageSquare, Users } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useSocket } from "../../context/SocketContext";
 import { authService } from "@/app/api/auth-service";
 import { Logo } from "../common/logo";
 
+type ViewMode = "recent" | "all";
+
 interface ChatHeaderProps {
   isConnected: boolean;
+  view: ViewMode;
+  onViewChange: (view: ViewMode) => void;
 }
 
-export default function ChatNavbar({ isConnected }: ChatHeaderProps) {
+export default function ChatNavbar({ isConnected, view, onViewChange }: ChatHeaderProps) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { socket } = useSocket();
   const [mounted, setMounted] = useState(false);
 
-  // Avoid hydration mismatch by waiting for mount
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => setMounted(true), []);
 
   const handleLogout = async () => {
     if (socket) socket.disconnect();
@@ -27,51 +28,101 @@ export default function ChatNavbar({ isConnected }: ChatHeaderProps) {
     window.location.href = "/login";
   };
 
-  // Use resolvedTheme to handle "system" setting correctly
-  const currentTheme = theme === 'system' ? resolvedTheme : theme;
+  const currentTheme = theme === "system" ? resolvedTheme : theme;
 
   return (
-    <div className="h-16 border-b border-app-border flex items-center justify-between px-8 bg-app-text/5 shrink-0">
-      <Logo variant="header" />
-
-      <div className="flex items-center gap-6">
-        {/* Connection Status */}
-        <div className="hidden xs:flex items-center gap-2 px-3 py-1 rounded-full bg-app-text/5 border border-app-border/50">
-          <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-          <span className="text-[9px] uppercase tracking-tighter opacity-60 font-bold">
-            {isConnected ? 'Link Active' : 'Link Lost'}
-          </span>
+    <div className="flex flex-col h-full w-full items-center py-6 justify-between shrink-0 backdrop-blur-md transition-colors duration-500 bg-[rgba(var(--nav-bg))]  border-[rgba(var(--app-border),0.3)]">
+      
+      {/* 1. TOP SECTION */}
+      <div className="flex flex-col items-center w-full">
+        <div className="hidden md:flex h-16 items-center justify-center mb-8 transition-transform hover:rotate-6 duration-300">
+          <Logo variant="header" />
         </div>
 
-        <div className="h-4 w-px bg-app-border hidden sm:block" />
+        <nav className="flex flex-col gap-4 w-full px-3 mt-16 md:mt-0">
+          <NavIcon 
+            icon={<MessageSquare size={22} />} 
+            active={view === "recent"} 
+            title="Messages" 
+            onClick={() => onViewChange("recent")}
+          />
+          <NavIcon 
+            icon={<Users size={22} />} 
+            active={view === "all"} 
+            title="Contacts" 
+            onClick={() => onViewChange("all")}
+          />
+        </nav>
+      </div>
 
-        <div className="flex items-center gap-3">
-          {/* Theme Toggle Button */}
-          <button 
-            onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")} 
-            className="text-app-text/60 hover:text-app-accent p-2 transition-transform active:scale-95"
-            aria-label="Toggle Theme"
+      {/* 2. BOTTOM SECTION */}
+      <div className="flex flex-col items-center gap-6 w-full px-3">
+        <div className="relative group">
+          <div
+            className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${
+              isConnected 
+                ? "bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.4)] animate-pulse" 
+                : "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.4)]"
+            }`}
+          />
+        </div>
+
+        <div className="flex flex-col items-center gap-2 w-full">
+          <button
+            onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
+            className="group w-12 h-12 flex items-center justify-center rounded-2xl transition-all active:scale-90 hover:bg-[rgb(var(--app-accent))]/10"
           >
             {!mounted ? (
-              <div className="w-4.5 h-4.5" /> // Spacer
+              <div className="w-5 h-5" />
             ) : currentTheme === "dark" ? (
-              <Sun size={18} />
+              <Sun size={20} className="text-amber-400 group-hover:rotate-45 transition-transform" />
             ) : (
-              <Moon size={18} />
+              <Moon size={20} className="text-indigo-600 group-hover:-rotate-12 transition-transform" />
             )}
           </button>
 
-          {/* Logout Button */}
-          <button 
-            onClick={handleLogout} 
-            className="flex items-center gap-2 text-red-500/70 hover:text-red-500 p-2 transition-colors"
+          <button
+            onClick={handleLogout}
+            className="w-12 h-12 flex items-center justify-center rounded-2xl transition-all active:scale-90 hover:bg-red-500/10"
             title="Terminate Session"
           >
-            <LogOut size={18} />
-            <span className="text-[10px] font-black uppercase tracking-widest hidden lg:block">Log Out</span>
+            <LogOut size={20} className="text-red-500/60" />
           </button>
         </div>
       </div>
     </div>
+  );
+}
+
+function NavIcon({
+  icon,
+  active = false,
+  title,
+  onClick
+}: {
+  icon: React.ReactNode;
+  active?: boolean;
+  title: string;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`
+      relative group w-12 h-12 flex items-center justify-center rounded-2xl transition-all duration-300
+      ${active
+          ? "bg-[rgb(var(--app-accent))] text-white shadow-xl shadow-indigo-500/20 scale-105"
+          : "hover:bg-[rgba(var(--app-accent),0.1)] text-app-text/50"
+      }
+    `}
+    >
+      {icon}
+      <span 
+        className="absolute left-16 scale-0 group-hover:scale-100 transition-all origin-left text-[11px] px-3 py-1.5 rounded-lg font-medium shadow-2xl pointer-events-none z-50 bg-app-text text-app-bg"
+      >
+        {title}
+      </span>
+    </button>
   );
 }

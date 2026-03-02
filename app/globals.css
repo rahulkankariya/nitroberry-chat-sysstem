@@ -2,25 +2,35 @@
 
 @layer base {
   :root {
-    --app-bg: 255 255 255; 
-    --app-text: 15 23 42;         /* Deep Slate (Almost Black) */
-    --app-accent: 37 99 235;      
-    /* Specific bubble background for recipients in Light Mode */
-    --bubble-secondary: 241 245 249; /* Slate-100 (Light Grey) */
+    --app-bg: 248, 250, 252;
+    --app-text: 15, 23, 42;
+    --app-accent: 99, 102, 241;
+    --app-border: 226, 232, 240;
+    --bubble-secondary: 255, 255, 255;
+    /* This ensures the navbar is light in light mode */
+    --nav-bg: 255, 255, 255, 0.8; 
   }
 
   .dark {
-    --app-bg: 12 10 9;            
-    --app-text: 248 250 252;      /* Slate-50 (Almost White) */
-    --app-accent: 96 165 250;     
-    /* Specific bubble background for recipients in Dark Mode */
-    --bubble-secondary: 38 38 38;  /* Charcoal */
+    --app-bg: 3, 7, 18;
+    --app-text: 241, 245, 249;
+    --app-accent: 129, 140, 248;
+    --app-border: 30, 41, 59;
+    --bubble-secondary: 15, 23, 42;
+    /* This ensures the navbar is dark in dark mode */
+    --nav-bg: 3, 7, 18, 0.8;
   }
 }
 
-body {
-  background-color: rgb(var(--app-bg));
-  color: rgb(var(--app-text));
-  transition: background-color 0.3s ease, color 0.3s ease;
+@layer base {
+  body {
+    background-color: rgb(var(--app-bg));
+    color: rgb(var(--app-text));
+    /* Soft light source effect */
+    background-image: radial-gradient(
+      circle at top right, 
+      rgba(var(--app-accent), 0.08), 
+      transparent 45%
+    );
+  }
 }
-

@@ -7,15 +7,15 @@ import { User } from "../../types/chat";
 import { useSocket } from "../../context/SocketContext";
 import { useAuth } from "../../context/AuthContext";
 
+type ViewMode = "recent" | "all";
+
 interface SidebarProps {
   selectedUserId?: string;
   onSelectUser: (user: User) => void;
+  view: ViewMode; // Received from parent
 }
 
-type ViewMode = "recent" | "all";
-
-export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) {
-  // Use searchUsers from your context
+export default function Sidebar({ selectedUserId, onSelectUser, view }: SidebarProps) {
   const { 
     users, 
     loadMore, 
@@ -26,15 +26,17 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
   } = useSocket();
   
   const { currentUser } = useAuth();
-  
-  const [view, setView] = useState<ViewMode>("recent");
   const [isFetching, setIsFetching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const observer = useRef<IntersectionObserver | null>(null);
 
+  // Clear search when the view mode changes via Navbar
+  useEffect(() => {
+    setSearchQuery("");
+  }, [view]);
+
   // --- SEARCH & VIEW LOGIC ---
   useEffect(() => {
-    // If there is no search query, just fetch the default list for the current view
     if (searchQuery.trim() === "") {
       if (view === "all") {
         fetchAllUsers();
@@ -44,19 +46,12 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
       return;
     }
 
-    // If there IS a search query, use your dedicated searchUsers function
     const delayDebounceFn = setTimeout(() => {
       searchUsers(searchQuery);
     }, 400);
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, view, fetchAllUsers, fetchRecentChats, searchUsers]);
-
-  const handleToggleView = () => {
-    const nextView = view === "recent" ? "all" : "recent";
-    setView(nextView);
-    setSearchQuery(""); // Clear search when switching modes
-  };
 
   useEffect(() => {
     setIsFetching(false);
@@ -84,23 +79,12 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
   );
 
   return (
-    <aside className="w-80 h-full border-r border-app-border bg-app-bg flex flex-col overflow-hidden">
-      {/* HEADER SECTION */}
+    <aside className="w-80 h-full  border-app-border bg-app-bg flex flex-col overflow-hidden">
       <div className="p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold tracking-tight text-app-text">
-            {view === "recent" ? "Messages" : "All Users"}
-          </h1>
-          
-          <button 
-            onClick={handleToggleView} 
-            className="p-2 rounded-full bg-app-accent/10 text-app-accent hover:bg-app-accent/20 transition-colors"
-          >
-            {view === "recent" ? <Users size={20} /> : <MessageSquare size={20} />}
-          </button>
-        </div>
+        <h1 className="text-xl font-bold tracking-tight text-app-text">
+          {view === "recent" ? "Messages" : "All Users"}
+        </h1>
 
-        {/* SEARCH INPUT */}
         <div className="relative group">
           <Search 
             size={16} 
@@ -126,7 +110,6 @@ export default function Sidebar({ selectedUserId, onSelectUser }: SidebarProps) 
 
       <hr className="border-app-border/50 mx-4" />
 
-      {/* USER LIST */}
       <div className="flex-1 overflow-y-auto custom-scrollbar mt-2 relative">
         {users.length > 0 ? (
           <div className="flex flex-col">
