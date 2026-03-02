@@ -35,32 +35,32 @@ export default function Sidebar({
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<FilterMode>("all");
 
-  // Reset filter when switching between Recent and All Directory
+  // 1. Reset states when switching between "Recent" and "Directory"
   useEffect(() => {
     setSearchQuery("");
     setFilter("all");
   }, [view]);
 
-  // Fetching Logic with Debounced Search
+  // 2. API/Socket Fetching Logic: Triggered by Search, View, OR Filter change
   useEffect(() => {
-    if (searchQuery.trim() === "") {
-      view === "all" ? fetchAllUsers() : fetchRecentChats();
-      return;
+    // If searching, ignore the tabs and fetch search results
+    if (searchQuery.trim() !== "") {
+      const delayDebounceFn = setTimeout(() => {
+        searchUsers(searchQuery);
+      }, 400);
+      return () => clearTimeout(delayDebounceFn);
     }
-    const delayDebounceFn = setTimeout(() => {
-      searchUsers(searchQuery);
-    }, 400);
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, view, fetchAllUsers, fetchRecentChats, searchUsers]);
 
-  // Filter Logic: Unread logic only applies to 'recent' view
-  const displayedUsers = useMemo(() => {
-    if (view === "recent" && filter === "unread") {
-      return users.filter((u) => (u.unreadCount ?? 0) > 0);
+    // If not searching, fetch based on the active tab/filter
+    if (view === "all") {
+      fetchAllUsers();
+    } else {
+      // Pass the 'filter' parameter (all | unread) to your socket function
+      fetchRecentChats(filter);
     }
-    return users;
-  }, [users, filter, view]);
+  }, [searchQuery, view, filter, fetchAllUsers, fetchRecentChats, searchUsers]);
 
+  // 3. UI logic for the unread badge (calculated from the current list)
   const unreadChatsCount = useMemo(() => {
     return users.filter((u) => (u.unreadCount ?? 0) > 0).length;
   }, [users]);
@@ -116,17 +116,17 @@ export default function Sidebar({
       {/* --- USER LIST AREA --- */}
       <div className="flex-1 overflow-y-auto no-scrollbar">
         <UserList
-          users={displayedUsers}
-          hasMore={hasMore && filter === "all"}
-          loadMore={loadMore}
+          users={users} // Display whatever the API returned
+          hasMore={hasMore}
+          loadMore={() => loadMore(filter)} // Pass current filter to pagination logic
           searchQuery={searchQuery}
           selectedUserId={selectedUserId}
           currentUserId={currentUser?._id || ""}
           onSelectUser={onSelectUser}
         />
 
-        {/* Empty States */}
-        {filter === "unread" && view === "recent" && displayedUsers.length === 0 && (
+        {/* Empty State for Unread Filter */}
+        {filter === "unread" && view === "recent" && users.length === 0 && (
           <div className="flex flex-col items-center justify-center p-10 text-center">
             <p className="text-sm text-[rgb(var(--app-text-muted))] opacity-60">
               No unread messages

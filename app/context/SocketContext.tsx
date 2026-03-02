@@ -18,9 +18,9 @@ type SocketContextType = {
   users: User[];
   activeUserId: string | null; // --- ADDED ---
   setActiveUserId: (id: string | null) => void; // --- ADDED ---
-  loadMore: () => void;
+  loadMore: (filter?: string) => void;
   searchUsers: (query: string) => void;
-  fetchRecentChats: () => void;
+fetchRecentChats: (filter?: string) => void;
   fetchAllUsers: () => void;
   hasMore: boolean;
 };
@@ -83,7 +83,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   // --- NEW: Fetch Recent Chats ---
-  const fetchRecentChats = useCallback(() => {
+ const fetchRecentChats = useCallback((filter: string = "all") => {
     if (socket && isConnected) {
       setViewMode("recent");
       setPage(0);
@@ -92,6 +92,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       socket.emit(SOCKET_EVENTS.REQUEST_USER_LIST, {
         pageIndex: 0,
         pageSize: PAGE_SIZE,
+        filter: filter,
       });
     }
   }, [socket, isConnected]);

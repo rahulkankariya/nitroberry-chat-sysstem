@@ -1,33 +1,47 @@
+"use client";
+
 import { useRef, useCallback, useState, useEffect } from "react";
 import { Loader2, Search } from "lucide-react";
 import UserItem from "./UserItem";
 import { User } from "@/app/types/chat";
 
-
 interface UserListProps {
   users: User[];
   hasMore: boolean;
-  loadMore: () => void;
+  // UPDATE: Accept an optional filter string (e.g., "all" | "unread")
+  loadMore: (filter?: string) => void; 
   searchQuery: string;
   selectedUserId?: string;
   currentUserId: string;
   onSelectUser: (user: User) => void;
 }
 
-export default function UserList({ users, hasMore, loadMore, searchQuery, selectedUserId, currentUserId, onSelectUser }: UserListProps) {
+export default function UserList({ 
+  users, 
+  hasMore, 
+  loadMore, 
+  searchQuery, 
+  selectedUserId, 
+  currentUserId, 
+  onSelectUser 
+}: UserListProps) {
   const [isFetching, setIsFetching] = useState(false);
   const observer = useRef<IntersectionObserver | null>(null);
 
-  useEffect(() => { setIsFetching(false); }, [users]);
+  // Reset fetching state when users list updates
+  useEffect(() => { 
+    setIsFetching(false); 
+  }, [users]);
 
   const lastUserElementRef = useCallback((node: HTMLDivElement | null) => {
     if (isFetching) return;
     if (observer.current) observer.current.disconnect();
 
     observer.current = new IntersectionObserver((entries) => {
+      // If the loader/bottom element is visible and there is more data to fetch
       if (entries[0].isIntersecting && hasMore) {
         setIsFetching(true);
-        loadMore();
+        loadMore(); // This calls the function passed from Sidebar
       }
     }, { threshold: 0.1 });
 
@@ -57,6 +71,8 @@ export default function UserList({ users, hasMore, loadMore, searchQuery, select
             currentUserId={currentUserId} 
           />
         ))}
+        
+        {/* Infinite Scroll Trigger & Loader */}
         {hasMore && (
           <div ref={lastUserElementRef} className="p-4 flex justify-center">
             <Loader2 className="w-5 h-5 animate-spin text-[rgb(var(--app-accent))] opacity-50" />
