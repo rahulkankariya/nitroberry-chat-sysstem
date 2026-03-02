@@ -19,36 +19,24 @@ export default function UserItem({
   const lastMessage = user.lastMessage;
   const unreadCount = user.unreadCount ?? 0;
 
- 
+  // Logic: Only show ticks if the last message was sent by the current user
+  const isSentByMe = lastMessage?.sender === currentUserId;
+  const isSeen = lastMessage?.status === "seen";
 
-
-
-  const status = lastMessage?.status;
-
-const isSeen = status === "seen";
-const isDelivered = status === "delivered" || status === "seen";
-
-  console.log("ISeen",lastMessage)
   const getDisplayContent = () => {
     if (!lastMessage) return "No messages yet";
     switch (lastMessage.messageType) {
-      case MESSAGE_TYPES.IMAGE:
-        return "📷 Photo";
-      case MESSAGE_TYPES.VIDEO:
-        return "🎥 Video";
-      case MESSAGE_TYPES.AUDIO:
-        return "🎙️ Voice message";
-      case MESSAGE_TYPES.FILE:
-        return "📄 Document";
-      default:
-        return lastMessage.content || "";
+      case MESSAGE_TYPES.IMAGE: return "📷 Photo";
+      case MESSAGE_TYPES.VIDEO: return "🎥 Video";
+      case MESSAGE_TYPES.AUDIO: return "🎙️ Voice message";
+      case MESSAGE_TYPES.FILE: return "📄 Document";
+      default: return lastMessage.content || "";
     }
   };
 
   const getInitials = (name: string) => {
     const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2)
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     return name.substring(0, 2).toUpperCase();
   };
 
@@ -63,117 +51,62 @@ const isDelivered = status === "delivered" || status === "seen";
   return (
     <div
       onClick={onClick}
-      className={`group flex items-center p-3.5 mx-2 my-1 rounded-xl cursor-pointer transition-all duration-200 ${
-        isActive
-          ? "bg-app-accent/15 ring-1 ring-app-accent/20"
-          : "hover:bg-app-text/5"
-      }`}
+      className={`group flex items-center p-3.5 mx-2 my-1 rounded-xl cursor-pointer transition-all duration-200 
+    ${isActive ? "bg-slate-100 dark:bg-white/5" : "hover:bg-slate-100 dark:hover:bg-white/5"}`}
     >
       {/* --- AVATAR SECTION --- */}
-       {/* --- PROFESSIONAL AVATAR SECTION --- */}
-      <div className="relative shrink-0 group">
-        {/* The Avatar Container (Perfect Circle) */}
-        <div
-          className={`h-12 w-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm overflow-hidden border-2 relative 
-    ${
-      isActive
-        ? "bg-linear-to-br from-app-accent to-app-accent/80 border-app-accent/30 shadow-lg shadow-app-accent/20 scale-105"
-        : "bg-white dark:bg-[#18181b] border-slate-100 dark:border-white/5 hover:border-app-accent/40"
-    } ${!user.isOnline && !isActive ? "grayscale-[0.5] opacity-80" : ""}`}
-        >
+      <div className="relative shrink-0">
+        <div className={`h-12 w-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm overflow-hidden border-2 relative 
+            ${isActive ? "border-app-accent scale-105" : "bg-slate-100 dark:bg-zinc-900 border-slate-200 dark:border-white/10 group-hover:border-app-accent/40"}`}>
           {user.avatar ? (
-            <img
-              src={user.avatar}
-              alt={user.fullName}
-              className="h-full w-full object-cover"
-            />
+            <img src={user.avatar} alt={user.fullName} className="h-full w-full object-cover" />
           ) : (
-            /* Clean Initials */
-            <span
-              className={`text-[14px] font-bold tracking-tight select-none transition-colors duration-300 ${
-                isActive
-                  ? "dark:text-slate-400"
-                  : "text-slate-500 dark:text-slate-400 group-hover:text-app-accent"
-              }`}
-            >
+            <span className={`text-sm font-bold ${isActive ? "text-app-accent" : "text-slate-500 dark:text-zinc-400"}`}>
               {getInitials(user.fullName)}
             </span>
           )}
-
-          {/* Professional Light/Dark Overlays */}
-          <div className="absolute inset-0 bg-linear-to-tr from-black/5 via-transparent to-white/10 pointer-events-none" />
         </div>
-
-        {/* Status Indicator (Curved to the Circle) */}
-        <div
-          className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-[2.5px] transition-all duration-300 group-hover:scale-110 
-    ${
-      isActive
-        ? "border-white dark:border-[#1a1a1a]"
-        : "border-white dark:border-[#0c0a09]"
-    } ${
-      user.isOnline
-        ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
-        : "bg-red-900 shadow-[0_0_8px_rgba(127,29,29,0.3)]"
-    }`}
+        <div className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 transition-all duration-300 
+          ${isActive ? "border-slate-100 dark:border-zinc-800" : "border-white dark:border-zinc-950"} 
+          ${user.isOnline ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-400 dark:bg-zinc-600"}`} 
         />
       </div>
 
       {/* --- CONTENT SECTION --- */}
       <div className="ml-4 flex-1 min-w-0 flex justify-between items-center">
-        
-        {/* Left Side: Name and Last Message */}
         <div className="flex-1 min-w-0">
-          <h3
-            className={`text-[14px] truncate transition-colors ${
-              isActive ? "text-app-text font-bold" : "text-app-text/90 font-semibold"
-            }`}
-          >
+          <h3 className={`text-sm truncate ${isActive ? "text-slate-900 dark:text-slate-100 font-semibold" : "text-slate-700 dark:text-zinc-300"}`}>
             {user.fullName}
           </h3>
-          <p
-            className={`text-[13px] truncate ${
-              unreadCount > 0 && !isActive ? "text-app-text font-medium" : "text-app-text/50"
-            }`}
-          >
+          <p className={`text-xs truncate mt-0.5 ${unreadCount > 0 && !isActive ? "text-slate-900 dark:text-slate-200 font-bold" : "text-slate-500 dark:text-zinc-500"}`}>
             {getDisplayContent()}
           </p>
         </div>
 
-        {/* Right Side: Time and Status Ticks (Stacked) */}
-        <div className="flex flex-col items-end shrink-0 ml-3 gap-1">
+        <div className="flex flex-col items-end shrink-0 ml-3 gap-1.5">
           {time && (
-            <span
-              className={`text-[10px] font-medium uppercase tracking-tighter ${
-                unreadCount > 0 ? "text-app-accent" : "opacity-40"
-              }`}
-            >
+            <span className={`text-[10px] font-medium transition-colors ${unreadCount > 0 && !isActive ? "text-emerald-500 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500"}`}>
               {time}
             </span>
           )}
 
-          <div className="flex items-center gap-1.5 h-5">
-            {/* Unread Counter Badge */}
-            {unreadCount > 0 && (
-              <div className="bg-app-accent px-1.5 py-0.5 rounded-lg shadow-lg shadow-app-accent/20 animate-pulse">
-                <span className="text-[10px] font-black italic text-white dark:text-black">
-                  {unreadCount > 10 ? "10+" : unreadCount}
+          <div className="flex items-center justify-end h-5 min-w-5">
+            {/* Show Unread Count if exists, OTHERWISE show status ticks if I sent the message */}
+            {unreadCount > 0 && !isActive ? (
+              <div className="flex items-center justify-center bg-emerald-500 min-w-4.5 h-4.5 rounded-full shadow-sm">
+                <span className="text-[10px] font-bold text-white leading-none px-1">
+                  {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               </div>
-            )}
-
-            {/* Checkbox Ticks: Only show if I am the sender */}
-            {lastMessage && (
+            ) : isSentByMe ? (
               <span className="shrink-0">
                 {isSeen ? (
-                  <CheckCheck size={16} className="text-blue-500" strokeWidth={2.5} />
-                ) : isDelivered ? (
-                  <CheckCheck size={16} className="text-app-text/40" strokeWidth={2} />
+                  <CheckCheck size={16} className="text-sky-500" />
                 ) : (
-                  <Check size={16} className="text-app-text/30" strokeWidth={2} />
+                  <CheckCheck size={16} className="text-slate-400 dark:text-zinc-500" />
                 )}
               </span>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
