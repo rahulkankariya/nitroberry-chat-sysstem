@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useSocket } from "../../context/SocketContext";
 import { User } from "../../types/chat";
-import Sidebar from "./Sidebar";
+// import Sidebar from "./Sidebar";
+import Sidebar from "./sidebar/";
 import ChatArea from "./ChatArea";
 import ChatNavbar from "./ChatNavbar"; 
 import { Menu, X } from "lucide-react"; 

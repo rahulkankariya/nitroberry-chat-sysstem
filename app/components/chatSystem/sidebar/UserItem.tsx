@@ -1,7 +1,8 @@
 "use client";
 
-import { User } from "../../types/chat";
-import { MESSAGE_TYPES } from "../../constants/chat";
+
+import { MESSAGE_TYPES } from "@/app/constants/chat";
+import { User } from "@/app/types/chat";
 import { CheckCheck } from "lucide-react";
 
 interface UserItemProps {
