@@ -31,56 +31,51 @@ export default function ChatNavbar({ isConnected, view, onViewChange }: ChatHead
   const currentTheme = theme === "system" ? resolvedTheme : theme;
 
   return (
-    <div className="flex flex-col h-full w-full items-center py-6 justify-between shrink-0 backdrop-blur-md transition-colors duration-500 bg-[rgba(var(--nav-bg))]  border-[rgba(var(--app-border),0.3)]">
+    <div className="flex flex-row md:flex-col h-full w-full items-center justify-between px-6 md:px-0 md:py-6 transition-colors duration-500 bg-[rgba(var(--nav-bg))] border-[rgba(var(--app-border),0.3)]">
       
-      {/* 1. TOP SECTION */}
-      <div className="flex flex-col items-center w-full">
-        <div className="hidden md:flex h-16 items-center justify-center mb-8 transition-transform hover:rotate-6 duration-300">
-          <Logo variant="header" />
-        </div>
-
-        <nav className="flex flex-col gap-4 w-full px-3 mt-16 md:mt-0">
-          <NavIcon 
-            icon={<MessageSquare size={22} />} 
-            active={view === "recent"} 
-            title="Messages" 
-            onClick={() => onViewChange("recent")}
-          />
-          <NavIcon 
-            icon={<Users size={22} />} 
-            active={view === "all"} 
-            title="Contacts" 
-            onClick={() => onViewChange("all")}
-          />
-        </nav>
+      {/* LOGO - Hidden on mobile bottom bar to save space */}
+      <div className="hidden md:flex h-16 items-center justify-center mb-8 transition-transform hover:rotate-6 duration-300">
+        <Logo variant="header" />
       </div>
 
-      {/* 2. BOTTOM SECTION */}
-      <div className="flex flex-col items-center gap-6 w-full px-3">
-        
+      {/* NAVIGATION ICONS */}
+      <nav className="flex flex-row md:flex-col gap-8 md:gap-4 items-center">
+        <NavIcon 
+          icon={<MessageSquare size={22} />} 
+          active={view === "recent"} 
+          title="Messages" 
+          onClick={() => onViewChange("recent")}
+        />
+        <NavIcon 
+          icon={<Users size={22} />} 
+          active={view === "all"} 
+          title="Contacts" 
+          onClick={() => onViewChange("all")}
+        />
+      </nav>
 
-        <div className="flex flex-col items-center gap-2 w-full">
-          <button
-            onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
-            className="group w-12 h-12 flex items-center justify-center rounded-2xl transition-all active:scale-90 hover:bg-[rgb(var(--app-accent))]/10"
-          >
-            {!mounted ? (
-              <div className="w-5 h-5" />
-            ) : currentTheme === "dark" ? (
-              <Sun size={20} className="text-amber-400 group-hover:rotate-45 transition-transform" />
-            ) : (
-              <Moon size={20} className="text-indigo-600 group-hover:-rotate-12 transition-transform" />
-            )}
-          </button>
+      {/* THEME & LOGOUT */}
+      <div className="flex flex-row md:flex-col items-center gap-4 md:gap-6">
+        <button
+          onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
+          className="group w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl transition-all active:scale-90 hover:bg-[rgb(var(--app-accent))]/10"
+        >
+          {!mounted ? (
+            <div className="w-5 h-5" />
+          ) : currentTheme === "dark" ? (
+            <Sun size={20} className="text-amber-400 group-hover:rotate-45 transition-transform" />
+          ) : (
+            <Moon size={20} className="text-indigo-600 group-hover:-rotate-12 transition-transform" />
+          )}
+        </button>
 
-          <button
-            onClick={handleLogout}
-            className="w-12 h-12 flex items-center justify-center rounded-2xl transition-all active:scale-90 hover:bg-red-500/10"
-            title="Terminate Session"
-          >
-            <LogOut size={20} className="text-red-500/60" />
-          </button>
-        </div>
+        <button
+          onClick={handleLogout}
+          className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl transition-all active:scale-90 hover:bg-red-500/10"
+          title="Terminate Session"
+        >
+          <LogOut size={20} className="text-red-500/60" />
+        </button>
       </div>
     </div>
   );
@@ -100,20 +95,17 @@ function NavIcon({
   return (
     <button
       onClick={onClick}
-      title={title}
       className={`
       relative group w-12 h-12 flex items-center justify-center rounded-2xl transition-all duration-300
       ${active
           ? "bg-[rgb(var(--app-accent))] text-white shadow-xl shadow-indigo-500/20 scale-105"
-          /* 1. Added explicit text-slate-500 for light mode and kept your variable for dark */
           : "hover:bg-[rgba(var(--app-accent),0.1)] text-slate-500 dark:text-app-text/50"
       }
     `}
     >
       {icon}
-      <span 
-        className="absolute left-16 scale-0 group-hover:scale-100 transition-all origin-left text-[11px] px-3 py-1.5 rounded-lg font-medium shadow-2xl pointer-events-none z-50 bg-app-text text-app-bg"
-      >
+      {/* Tooltip - Only visible on desktop hover */}
+      <span className="hidden md:block absolute left-16 scale-0 group-hover:scale-100 transition-all origin-left text-[11px] px-3 py-1.5 rounded-lg font-medium shadow-2xl pointer-events-none z-50 bg-app-text text-app-bg">
         {title}
       </span>
     </button>

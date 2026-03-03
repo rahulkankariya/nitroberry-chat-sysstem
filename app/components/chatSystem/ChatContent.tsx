@@ -3,11 +3,9 @@
 import { useState } from "react";
 import { useSocket } from "../../context/SocketContext";
 import { User } from "../../types/chat";
-// import Sidebar from "./Sidebar";
 import Sidebar from "./sidebar/";
 import ChatArea from "./ChatArea";
 import ChatNavbar from "./ChatNavbar"; 
-import { Menu, X } from "lucide-react"; 
 import EmptyState from "./EmptyState";
 
 type ViewMode = "recent" | "all";
@@ -15,27 +13,13 @@ type ViewMode = "recent" | "all";
 export function ChatContent() {
   const { isConnected } = useSocket();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [view, setView] = useState<ViewMode>("recent");
 
   return (
-    // Body Background
-    <div className="absolute inset-0 z-50 flex bg-[rgb(var(--app-bg))] overflow-hidden animate-in fade-in duration-500">
+    <div className="absolute inset-0 z-50 flex flex-col md:flex-row bg-[rgb(var(--app-bg))] overflow-hidden animate-in fade-in duration-500">
       
-      {/* 1. MOBILE HAMBURGER */}
-      <button 
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="md:hidden fixed top-4 left-4 z-60 p-2 bg-[rgb(var(--app-accent))] text-white rounded-xl shadow-lg hover:scale-105 transition-transform"
-      >
-        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
-
-      {/* 2. VERTICAL NAVBAR (Dark rail from Image 1 & 2) */}
-      <header className={`
-        fixed inset-y-0 left-0 z-50 w-20 shrink-0 border-r border-[rgb(var(--app-border))] bg-[rgb(var(--nav-bg))]
-        transition-transform duration-300 md:translate-x-0 md:static
-        ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
-      `}>
+      {/* 1. NAVIGATION (Sidebar rail on Desktop, Bottom Bar on Mobile) */}
+      <header className="fixed bottom-0 left-0 right-0 z-50 h-20 w-full border-t border-[rgb(var(--app-border))] bg-[rgb(var(--nav-bg))] md:static md:h-full md:w-20 md:border-t-0 md:border-r transition-all duration-300">
         <ChatNavbar 
           isConnected={isConnected} 
           view={view} 
@@ -43,10 +27,16 @@ export function ChatContent() {
         />
       </header>
 
-      {/* 3. MAIN CONTENT CONTAINER */}
-      <div className="flex-1 flex p-3 md:p-5 gap-4 overflow-hidden">
-        {/* SIDEBAR (The Contacts List) */}
-        <aside className="hidden lg:flex w-80 flex-col bg-[rgb(var(--app-surface))] rounded-4xl border border-[rgb(var(--app-border))] shadow-sm overflow-hidden">
+      {/* 2. MAIN CONTENT CONTAINER */}
+      {/* Added pb-20 on mobile to prevent content from hiding behind the bottom bar */}
+      <div className="flex-1 flex p-3 md:p-5 gap-4 overflow-hidden pb-20 md:pb-5">
+        
+        {/* SIDEBAR (Contacts List) */}
+        {/* On mobile: Hidden if a user is selected so the chat can take full screen */}
+        <aside className={`
+          ${selectedUser ? "hidden" : "flex"} 
+          lg:flex w-full lg:w-80 flex-col bg-[rgb(var(--app-surface))] rounded-4xl border border-[rgb(var(--app-border))] shadow-sm overflow-hidden
+        `}>
           <Sidebar
             view={view}
             selectedUserId={selectedUser?._id}
@@ -54,23 +44,20 @@ export function ChatContent() {
           />
         </aside>
 
-        {/* CHAT AREA (The main Conversation) */}
-        <main className="flex-1 flex flex-col bg-[rgb(var(--app-surface))] bg-opacity-60 backdrop-blur-xl rounded-[2.5rem] border border-[rgb(var(--app-border))] overflow-hidden relative shadow-sm">
+        {/* CHAT AREA (Conversation) */}
+        {/* On mobile: Only shows if a user is selected */}
+        <main className={`
+          ${!selectedUser ? "hidden" : "flex"} 
+          flex-1 flex-col bg-[rgb(var(--app-surface))] bg-opacity-60 backdrop-blur-xl rounded-[2.5rem] border border-[rgb(var(--app-border))] overflow-hidden relative shadow-sm
+          lg:flex
+        `}>
           {selectedUser ? (
             <ChatArea activeUser={selectedUser} />
           ) : (
-           <EmptyState />
+            <EmptyState />
           )}
         </main>
       </div>
-
-      {/* MOBILE OVERLAY */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-opacity"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
     </div>
   );
 }
