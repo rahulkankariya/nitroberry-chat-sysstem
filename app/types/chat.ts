@@ -13,6 +13,7 @@ export interface User {
   unreadCount?: number;
   isTyping?: boolean;
   avatar?:string
+  isPinned?:boolean
   
 
   // lastMessage can now be the message object or null

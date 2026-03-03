@@ -1,9 +1,9 @@
 "use client";
 
-
 import { MESSAGE_TYPES } from "@/app/constants/chat";
 import { User } from "@/app/types/chat";
-import { CheckCheck } from "lucide-react";
+import { CheckCheck, Pin, PinOff } from "lucide-react";
+import { useSocket } from "@/app/context/SocketContext";
 
 interface UserItemProps {
   user: User;
@@ -18,12 +18,19 @@ export default function UserItem({
   onClick,
   currentUserId,
 }: UserItemProps) {
+  const { togglePin } = useSocket(); // Assuming togglePin is exposed in your context
 
   const lastMessage = user.lastMessage;
   const unreadCount = user.unreadCount ?? 0;
+  const isPinned = user.isPinned ?? false;
 
   const isSentByMe = lastMessage?.sender === currentUserId;
   const isSeen = lastMessage?.status === "seen";
+
+  const handlePinAction = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Critical: Prevents the chat from opening when pinning
+    togglePin(user._id, !isPinned);
+  };
 
   const getDisplayContent = () => {
     if (!lastMessage) return "No messages yet";
@@ -53,7 +60,7 @@ export default function UserItem({
   return (
     <div
       onClick={onClick}
-      className={`group flex items-center p-3.5 mx-2 my-1 rounded-2xl cursor-pointer transition-all duration-200 
+      className={`group flex items-center p-3.5 mx-2 my-1 rounded-2xl cursor-pointer transition-all duration-200 relative
       ${isActive 
         ? "bg-[rgb(var(--app-accent))]/10 shadow-sm" 
         : "hover:bg-[rgb(var(--app-text))]/5"
@@ -83,13 +90,17 @@ export default function UserItem({
       </div>
 
       {/* --- CONTENT SECTION --- */}
-      <div className="ml-4 flex-1 min-w-0 flex justify-between items-center">
+      <div className="ml-4 flex-1 min-w-0 flex justify-between items-center mr-2">
         <div className="flex-1 min-w-0">
-          <h3 className={`text-sm truncate transition-colors ${
-            isActive ? "text-[rgb(var(--app-text))] font-bold" : "text-[rgb(var(--app-text))] font-semibold"
-          }`}>
-            {user.fullName}
-          </h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className={`text-sm truncate transition-colors ${
+              isActive ? "text-[rgb(var(--app-text))] font-bold" : "text-[rgb(var(--app-text))] font-semibold"
+            }`}>
+              {user.fullName}
+            </h3>
+            {/* Minimal Pinned Indicator (Always visible if pinned) */}
+            {isPinned && <Pin size={10} className="text-[rgb(var(--app-accent))] shrink-0 rotate-45" fill="currentColor" />}
+          </div>
           <p className={`text-xs truncate mt-0.5 transition-colors ${
             unreadCount > 0 && !isActive 
               ? "text-[rgb(var(--app-text))] font-bold" 
@@ -123,6 +134,21 @@ export default function UserItem({
             ) : null}
           </div>
         </div>
+      </div>
+
+      {/* --- PIN ACTION BUTTON (Hover State) --- */}
+      <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-linear-to-l from-[rgb(var(--app-bg))] via-[rgb(var(--app-bg))] to-transparent pl-4 pr-1 h-full rounded-r-2xl">
+        <button
+          onClick={handlePinAction}
+          className={`p-2 rounded-full transition-all hover:scale-110 active:scale-95 ${
+            isPinned 
+            ? "text-[rgb(var(--app-accent))] bg-[rgb(var(--app-accent))]/10" 
+            : "text-[rgb(var(--app-text))]/40 hover:text-[rgb(var(--app-text))]"
+          }`}
+          title={isPinned ? "Unpin Chat" : "Pin Chat"}
+        >
+          {isPinned ? <PinOff size={14} /> : <Pin size={14} className="rotate-45" />}
+        </button>
       </div>
     </div>
   );

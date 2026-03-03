@@ -41,9 +41,8 @@ export default function Sidebar({
     setFilter("all");
   }, [view]);
 
-  // 2. API/Socket Fetching Logic: Triggered by Search, View, OR Filter change
+  // 2. API/Socket Fetching Logic
   useEffect(() => {
-    // If searching, ignore the tabs and fetch search results
     if (searchQuery.trim() !== "") {
       const delayDebounceFn = setTimeout(() => {
         searchUsers(searchQuery);
@@ -51,16 +50,25 @@ export default function Sidebar({
       return () => clearTimeout(delayDebounceFn);
     }
 
-    // If not searching, fetch based on the active tab/filter
     if (view === "all") {
       fetchAllUsers();
     } else {
-      // Pass the 'filter' parameter (all | unread) to your socket function
       fetchRecentChats(filter);
     }
   }, [searchQuery, view, filter, fetchAllUsers, fetchRecentChats, searchUsers]);
 
-  // 3. UI logic for the unread badge (calculated from the current list)
+  // 3. Split Users into Pinned and Regular
+  // Only show the "Pinned" section when in 'recent' view and not searching
+  const { pinnedUsers, regularUsers } = useMemo(() => {
+    if (view === "all" || searchQuery.trim() !== "") {
+      return { pinnedUsers: [], regularUsers: users };
+    }
+    return {
+      pinnedUsers: users.filter((u) => u.isPinned),
+      regularUsers: users.filter((u) => !u.isPinned),
+    };
+  }, [users, view, searchQuery]);
+
   const unreadChatsCount = useMemo(() => {
     return users.filter((u) => (u.unreadCount ?? 0) > 0).length;
   }, [users]);
@@ -72,7 +80,6 @@ export default function Sidebar({
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
       </div>
 
-      {/* --- SUB-TABS: Only shown in 'recent' view --- */}
       {view === "recent" && (
         <>
           <div className="flex items-center gap-2 px-4 mb-3">
@@ -113,19 +120,41 @@ export default function Sidebar({
         </>
       )}
 
-      {/* --- USER LIST AREA --- */}
       <div className="flex-1 overflow-y-auto no-scrollbar">
+        {/* --- PINNED SECTION --- */}
+        {pinnedUsers.length > 0 && (
+          <div className="mb-2">
+            <div className="px-4 py-2 flex items-center gap-2">
+               <span className="text-[10px] font-bold uppercase tracking-wider text-[rgb(var(--app-text-muted))] opacity-60">
+                 Pinned Chats
+               </span>
+            </div>
+            <UserList
+              users={pinnedUsers}
+              hasMore={false} // Don't paginate pinned section
+              loadMore={() => {}}
+              searchQuery={searchQuery}
+              selectedUserId={selectedUserId}
+              currentUserId={currentUser?._id || ""}
+              onSelectUser={onSelectUser}
+            />
+            <div className="px-4 mt-2">
+              <div className="h-px bg-[rgb(var(--app-border))] opacity-50" />
+            </div>
+          </div>
+        )}
+
+        {/* --- REGULAR LIST AREA --- */}
         <UserList
-          users={users} // Display whatever the API returned
+          users={regularUsers}
           hasMore={hasMore}
-          loadMore={() => loadMore(filter)} // Pass current filter to pagination logic
+          loadMore={() => loadMore(filter)}
           searchQuery={searchQuery}
           selectedUserId={selectedUserId}
           currentUserId={currentUser?._id || ""}
           onSelectUser={onSelectUser}
         />
 
-        {/* Empty State for Unread Filter */}
         {filter === "unread" && view === "recent" && users.length === 0 && (
           <div className="flex flex-col items-center justify-center p-10 text-center">
             <p className="text-sm text-[rgb(var(--app-text-muted))] opacity-60">

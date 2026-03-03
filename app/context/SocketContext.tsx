@@ -12,29 +12,33 @@ import { User, ChatMessage } from "../types/chat";
 import { SOCKET_EVENTS } from "../constants/socket-events";
 import { notify } from "../utils/toast";
 
+// 1. ADDED togglePin to the Type definition
 type SocketContextType = {
   socket: Socket | null;
   isConnected: boolean;
   users: User[];
-  activeUserId: string | null; // --- ADDED ---
-  setActiveUserId: (id: string | null) => void; // --- ADDED ---
+  activeUserId: string | null;
+  setActiveUserId: (id: string | null) => void;
   loadMore: (filter?: string) => void;
   searchUsers: (query: string) => void;
-fetchRecentChats: (filter?: string) => void;
+  fetchRecentChats: (filter?: string) => void;
   fetchAllUsers: () => void;
+  togglePin: (userId: string, isPinned: boolean) => void; // --- ADDED ---
   hasMore: boolean;
 };
 
+// 2. ADDED togglePin to the Default Context
 const SocketContext = createContext<SocketContextType>({
   socket: null,
   isConnected: false,
   users: [],
-  activeUserId: null, // --- ADDED ---
-  setActiveUserId: () => {}, // --- ADDED ---
+  activeUserId: null,
+  setActiveUserId: () => {},
   loadMore: () => {},
   searchUsers: () => {},
   fetchRecentChats: () => {},
   fetchAllUsers: () => {},
+  togglePin: () => {}, // --- ADDED ---
   hasMore: true,
 });
 
@@ -42,7 +46,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
-  const [activeUserId, setActiveUserId] = useState<string | null>(null); // --- ADDED STATE ---
+  const [activeUserId, setActiveUserId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [viewMode, setViewMode] = useState<"recent" | "all">("recent");
@@ -79,11 +83,21 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         }
       });
     },
-    [],
+    []
   );
 
-  // --- NEW: Fetch Recent Chats ---
- const fetchRecentChats = useCallback((filter: string = "all") => {
+  // 3. IMPLEMENTED togglePin Function
+  const togglePin = useCallback((userId: string, isPinned: boolean) => {
+    if (socket && isConnected) {
+      // Optimistic Update: Update UI immediately
+      updateUserData(userId, { isPinned });
+      
+      // Emit to server
+      socket.emit("TOGGLE_PIN_CHAT", { targetUserId: userId, isPinned });
+    }
+  }, [socket, isConnected, updateUserData]);
+
+  const fetchRecentChats = useCallback((filter: string = "all") => {
     if (socket && isConnected) {
       setViewMode("recent");
       setPage(0);
@@ -97,7 +111,6 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [socket, isConnected]);
 
-  // --- NEW: Fetch All Users (Toggle Flow) ---
   const fetchAllUsers = useCallback(() => {
     if (socket && isConnected) {
       setViewMode("all");
@@ -169,23 +182,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (!socket) return;
 
-    const MAX_RETRIES = 2;
-    let retryCount = 0;
-
-    socket.on(SOCKET_EVENTS.CONNECT_ERROR, (err) => {
-      retryCount++;
-      if (retryCount <= MAX_RETRIES) {
-        console.log(`Connection failed. Attempt ${retryCount}/${MAX_RETRIES}`);
-        notify.error(`Something Went wrong`);
-      }
-      if (retryCount >= MAX_RETRIES) {
-        socket.disconnect();
-      }
-    });
-
     socket.on(SOCKET_EVENTS.CONNECT, () => {
       setIsConnected(true);
-      retryCount = 0;
       socket.emit(SOCKET_EVENTS.REQUEST_USER_LIST, {
         pageIndex: 0,
         pageSize: 10,
@@ -199,21 +197,24 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
           res.data.forEach((user: User) => {
             userMap.set(user._id, { ...userMap.get(user._id), ...user });
           });
-
           return Array.from(userMap.values());
         });
         setHasMore(res.data.length >= PAGE_SIZE);
       }
     });
 
-    // --- UPDATED: RECEIVE_MESSAGE ---
+    // --- NEW: Handle Pin Response from server ---
+    socket.on("RESPONSE_TOGGLE_PIN", (res: any) => {
+      if (res.status === 200) {
+        updateUserData(res.userId, { isPinned: res.isPinned });
+      }
+    });
+
     const handleReceiveMessage = (msg: ChatMessage) => {
       const senderId = typeof msg.sender === "string" ? msg.sender : msg.sender._id;
 
       setUsers((prevUsers) => {
-        // activeUserId is now in scope because it's in the dependency array
         const isChatOpen = activeUserId === senderId;
-
         const userIndex = prevUsers.findIndex((u) => u._id === senderId);
         if (userIndex === -1) return prevUsers;
 
@@ -223,7 +224,6 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         const updatedUser: User = {
           ...currentUser,
           lastMessage: msg as any,
-          // Reset count if open, increment if closed
           unreadCount: isChatOpen ? 0 : (currentUser.unreadCount || 0) + 1,
         };
 
@@ -254,6 +254,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => {
       socket.off(SOCKET_EVENTS.RECEIVE_MESSAGE, handleReceiveMessage);
+      socket.off("RESPONSE_TOGGLE_PIN"); // Clean up pin listener
       socket.off(SOCKET_EVENTS.MESSAGE_SENT_SUCCESS);
       socket.off(SOCKET_EVENTS.MESSAGE_READ_SUCCESS);
       socket.off(SOCKET_EVENTS.USER_STATUS_CHANGED);
@@ -261,7 +262,6 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       socket.off(SOCKET_EVENTS.RESPONSE_USER_LIST);
       socket.off(SOCKET_EVENTS.DISCONNECT);
     };
-    // CRITICAL: activeUserId MUST be in this dependency array!
   }, [socket, updateUserData, activeUserId]); 
 
   return (
@@ -277,6 +277,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         searchUsers,
         fetchRecentChats,
         fetchAllUsers,
+        togglePin, // 4. ADDED to Provider Value
       }}
     >
       {children}
